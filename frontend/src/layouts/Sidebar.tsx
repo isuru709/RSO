@@ -10,6 +10,7 @@ import {
   Settings,
   GraduationCap,
   BookOpen,
+  HandCoins,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -41,6 +42,11 @@ export function Sidebar() {
         <NavLink to="/st-resources" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <BookOpen className="nav-icon" style={{ color: '#a855f7' }} />
           <span className="nav-label">ST Resource</span>
+        </NavLink>
+
+        <NavLink to="/st-resources/borrows" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <HandCoins className="nav-icon" style={{ color: '#a855f7' }} />
+          <span className="nav-label">ST Borrows</span>
         </NavLink>
 
         <NavLink to="/bookings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>

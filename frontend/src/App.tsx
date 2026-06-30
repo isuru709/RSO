@@ -18,6 +18,8 @@ import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from './pages/admin/AdminTenantsPage';
 import { STResourceListPage } from './pages/st-resources/STResourceListPage';
 import { NewSTResourcePage } from './pages/st-resources/NewSTResourcePage';
+import { EditSTResourcePage } from './pages/st-resources/EditSTResourcePage';
+import { STBorrowsPage } from './pages/st-resources/STBorrowsPage';
 import { ToastContainer } from './components/ToastContainer';
 
 import './styles/variables.css';
@@ -65,6 +67,8 @@ function AppRoutes() {
         <Route path="resources/:id" element={<ResourceDetailPage />} />
         <Route path="st-resources" element={<STResourceListPage />} />
         <Route path="st-resources/new" element={<NewSTResourcePage />} />
+        <Route path="st-resources/:id/edit" element={<EditSTResourcePage />} />
+        <Route path="st-resources/borrows" element={<STBorrowsPage />} />
         <Route path="bookings" element={<BookingListPage />} />
         <Route path="bookings/new" element={<NewBookingPage />} />
         <Route path="bookings/:id" element={<BookingDetailPage />} />

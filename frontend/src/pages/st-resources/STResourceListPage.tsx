@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { BookOpen, Search, Plus, MapPin, Trash2, PowerOff, Power } from 'lucide-react';
+import { BookOpen, Search, Plus, MapPin, Trash2, PowerOff, Power, Edit2, HandCoins } from 'lucide-react';
+import { BorrowSTResourceModal } from './BorrowSTResourceModal';
 
 interface STResource {
   id: string;
@@ -31,6 +32,8 @@ export function STResourceListPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showMine, setShowMine] = useState(false);
+  const [borrowTarget, setBorrowTarget] = useState<STResource | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const navigate = useNavigate();
   const { claims, user } = useAuth();
   const { toast } = useToast();
@@ -45,6 +48,17 @@ export function STResourceListPage() {
   };
 
   useEffect(() => { loadResources(); }, [showMine]);
+
+  // Fetch token balance for students
+  useEffect(() => {
+    if (isStudent) {
+      api.get<any>('/users/me/tokens').then(res => {
+        if (res.success && res.data?.balance) {
+          setTokenBalance(res.data.balance.balance);
+        }
+      });
+    }
+  }, []);
 
   const filtered = resources.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -99,11 +113,18 @@ export function STResourceListPage() {
           </h2>
           <p className="page-subtitle">{resources.length} student shared items</p>
         </div>
-        {isStudent && (
-          <button className="btn btn-primary" onClick={() => navigate('/st-resources/new')} style={{ background: '#a855f7', border: 'none' }}>
-            <Plus size={18} /> Share My Item
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {isStudent && (
+            <>
+              <button className="btn" onClick={() => navigate('/st-resources/borrows')} style={{ background: '#f3e8ff', color: '#a855f7', border: 'none' }}>
+                <HandCoins size={18} /> My Borrows
+              </button>
+              <button className="btn btn-primary" onClick={() => navigate('/st-resources/new')} style={{ background: '#a855f7', border: 'none' }}>
+                <Plus size={18} /> Share My Item
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
@@ -136,11 +157,12 @@ export function STResourceListPage() {
             const cond = conditionColors[r.condition] || conditionColors.good;
             const manageable = canManage(r);
             const isOwner = r.created_by === user?.uid;
+            const canBorrow = isStudent && !isOwner && r.is_available;
             return (
               <div
                 key={r.id}
                 className="card card-interactive"
-                style={{ cursor: 'pointer', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
+                style={{ cursor: 'default', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -156,23 +178,13 @@ export function STResourceListPage() {
                     <span className={`badge ${r.is_available ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: 10 }}>
                       {r.is_available ? 'Available' : 'Unavailable'}
                     </span>
-                    {manageable && (
-                      <div style={{ display: 'flex', gap: '3px' }}>
-                        <button className="btn btn-icon" style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleToggle(e, r)}>
-                          {r.is_available ? <PowerOff size={14} /> : <Power size={14} />}
-                        </button>
-                        <button className="btn btn-icon" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleDelete(e, r.id)}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-1)' }}>{r.name}</h3>
                 {r.description && (
                   <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>{r.description}</p>
                 )}
-                <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
                   {r.pickup_location && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {r.pickup_location}</span>}
                   {r.hourly_token_cost > 0 && (
                     <span style={{ color: '#a855f7', fontWeight: 600 }}>{r.hourly_token_cost} tokens/hr</span>
@@ -181,10 +193,47 @@ export function STResourceListPage() {
                     <span style={{ color: '#16a34a', fontWeight: 600 }}>Free</span>
                   )}
                 </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                  {canBorrow && (
+                    <button className="btn btn-sm" style={{ background: '#a855f7', color: 'white', border: 'none' }} onClick={() => setBorrowTarget(r)}>
+                      <HandCoins size={14} /> Borrow
+                    </button>
+                  )}
+                  {manageable && (
+                    <>
+                      {isOwner && (
+                        <button className="btn btn-sm" style={{ background: '#f3e8ff', color: '#a855f7', border: 'none' }} onClick={() => navigate(`/st-resources/${r.id}/edit`)}>
+                          <Edit2 size={14} /> Edit
+                        </button>
+                      )}
+                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleToggle(e, r)}>
+                        {r.is_available ? <PowerOff size={14} /> : <Power size={14} />}
+                      </button>
+                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleDelete(e, r.id)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* Borrow Modal */}
+      {borrowTarget && (
+        <BorrowSTResourceModal
+          resource={borrowTarget}
+          tokenBalance={tokenBalance}
+          onClose={() => setBorrowTarget(null)}
+          onSuccess={() => {
+            setBorrowTarget(null);
+            loadResources();
+          }}
+        />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import cors from '@fastify/cors';
 import { logger, errorHandler } from '@rso/shared';
 import { resourceRoutes } from './routes';
 import { stResourceRoutes } from './stRoutes';
+import { stBookingRoutes } from './stBookingRoutes';
 
 const server = Fastify({ logger: false, ignoreTrailingSlash: true });
 
@@ -22,6 +23,7 @@ server.get('/health', async () => ({
 
 server.register(resourceRoutes);
 server.register(stResourceRoutes);
+server.register(stBookingRoutes);
 
 const start = async () => {
   try {
