@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { Monitor, Search, Plus, MapPin, Users, Filter, Beaker, Presentation, Laptop, Wrench, Trash2, Edit, PowerOff, Power, BookOpen, Share2 } from 'lucide-react';
+import { Monitor, Search, Plus, MapPin, Users, Filter, Beaker, Presentation, Laptop, Wrench, Trash2, Edit, PowerOff, Power, BookOpen } from 'lucide-react';
 
 interface Resource {
   id: string;
@@ -115,11 +115,6 @@ export function ResourceListPage() {
           <p className="page-subtitle">{resources.length} resources available</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          {isStudent && (
-            <button className="btn btn-primary" onClick={() => navigate('/resources/new')} style={{ background: '#a855f7' }}>
-              <Share2 size={18} /> Share My Resource
-            </button>
-          )}
           {isAdmin && (
             <button className="btn btn-primary" onClick={() => navigate('/resources/new')}>
               <Plus size={18} /> Add Resource

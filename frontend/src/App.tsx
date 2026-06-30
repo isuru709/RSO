@@ -16,6 +16,8 @@ import { NotificationPage } from './pages/notifications/NotificationPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from './pages/admin/AdminTenantsPage';
+import { STResourceListPage } from './pages/st-resources/STResourceListPage';
+import { NewSTResourcePage } from './pages/st-resources/NewSTResourcePage';
 import { ToastContainer } from './components/ToastContainer';
 
 import './styles/variables.css';
@@ -61,6 +63,8 @@ function AppRoutes() {
         <Route path="resources/new" element={<NewResourcePage />} />
         <Route path="resources/:id/edit" element={<EditResourcePage />} />
         <Route path="resources/:id" element={<ResourceDetailPage />} />
+        <Route path="st-resources" element={<STResourceListPage />} />
+        <Route path="st-resources/new" element={<NewSTResourcePage />} />
         <Route path="bookings" element={<BookingListPage />} />
         <Route path="bookings/new" element={<NewBookingPage />} />
         <Route path="bookings/:id" element={<BookingDetailPage />} />
