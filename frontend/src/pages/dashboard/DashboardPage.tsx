@@ -79,7 +79,7 @@ export function DashboardPage() {
     { label: 'Total Resources', value: stats.totalResources, icon: Monitor, color: 'var(--color-primary)', bg: 'var(--color-primary-light)' },
     { label: 'Active Bookings', value: stats.activeBookings, icon: CalendarDays, color: 'var(--color-success)', bg: 'var(--color-success-light)' },
     ...(isStudent && tokenBalance !== null ? [{
-      label: `🪙 Token Balance (${monthlyQuota}/month)`,
+      label: `Token Balance (${monthlyQuota}/month)`,
       value: tokenBalance,
       icon: Coins,
       color: tokenBalance > 20 ? 'var(--color-primary)' : 'var(--color-danger)',

@@ -184,7 +184,7 @@ export function NewResourcePage() {
           {/* Hourly Token Cost (Equipment only) */}
           {(resourceType === 'equipment' || resourceType === 'other') && (
             <div className="input-group">
-              <label className="input-label" htmlFor="res-cost">🪙 Hourly Token Cost</label>
+              <label className="input-label" htmlFor="res-cost">Hourly Token Cost</label>
               <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)' }}>
                 Students will spend this many tokens per hour when booking this equipment
               </p>

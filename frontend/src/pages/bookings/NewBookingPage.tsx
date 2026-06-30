@@ -20,7 +20,8 @@ export function NewBookingPage() {
   const [resourceId, setResourceId] = useState('');
   const [title, setTitle] = useState('');
   const [purpose, setPurpose] = useState('');
-  const [date, setDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [attendeeCount, setAttendeeCount] = useState('');
@@ -41,7 +42,9 @@ export function NewBookingPage() {
     // Default to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    setDate(tomorrow.toISOString().split('T')[0]);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    setStartDate(tomorrowStr);
+    setEndDate(tomorrowStr);
 
     // Fetch token balance for students
     if (isStudent) {
@@ -60,8 +63,8 @@ export function NewBookingPage() {
   // Calculate token cost
   const calculateTokenCost = () => {
     if (!selectedResource?.hourly_cost || !isStudent) return 0;
-    const startMs = new Date(`${date}T${startTime}:00`).getTime();
-    const endMs = new Date(`${date}T${endTime}:00`).getTime();
+    const startMs = new Date(`${startDate}T${startTime}:00`).getTime();
+    const endMs = new Date(`${endDate}T${endTime}:00`).getTime();
     const hours = Math.max(1, Math.ceil((endMs - startMs) / (1000 * 60 * 60)));
     return Math.ceil(selectedResource.hourly_cost * hours);
   };
@@ -69,10 +72,28 @@ export function NewBookingPage() {
   const tokenCost = calculateTokenCost();
   const hasEnoughTokens = tokenBalance === null || tokenBalance >= tokenCost;
 
+  // Calculate duration display
+  const getDurationDisplay = () => {
+    const startMs = new Date(`${startDate}T${startTime}:00`).getTime();
+    const endMs = new Date(`${endDate}T${endTime}:00`).getTime();
+    const totalHours = Math.max(0, (endMs - startMs) / (1000 * 60 * 60));
+    if (totalHours < 24) return `${totalHours} hours`;
+    const days = Math.floor(totalHours / 24);
+    const remainingHours = totalHours % 24;
+    return remainingHours > 0 ? `${days} day(s) ${remainingHours}h` : `${days} day(s)`;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!resourceId || !title || !date || !startTime || !endTime) {
+    if (!resourceId || !title || !startDate || !endDate || !startTime || !endTime) {
       toast('warning', 'Please fill all required fields');
+      return;
+    }
+
+    const startMs = new Date(`${startDate}T${startTime}:00`).getTime();
+    const endMs = new Date(`${endDate}T${endTime}:00`).getTime();
+    if (endMs <= startMs) {
+      toast('warning', 'End date/time must be after start date/time');
       return;
     }
 
@@ -82,8 +103,8 @@ export function NewBookingPage() {
     }
 
     setLoading(true);
-    const start_time = new Date(`${date}T${startTime}:00`).toISOString();
-    const end_time = new Date(`${date}T${endTime}:00`).toISOString();
+    const start_time = new Date(`${startDate}T${startTime}:00`).toISOString();
+    const end_time = new Date(`${endDate}T${endTime}:00`).toISOString();
 
     const res = await api.post('/bookings', {
       resource_id: resourceId,
@@ -162,7 +183,8 @@ export function NewBookingPage() {
               </h3>
               {isStudent && (
                 <div style={{ padding: 'var(--space-3)', background: 'var(--color-warning-light)', color: '#b45309', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
-                  🎓 As a student, you are only permitted to book EQUIPMENT resources. Tokens will be deducted based on hourly rate × duration.
+                  <Coins size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                  As a student, you can only book EQUIPMENT resources. Tokens are deducted based on hourly rate × duration.
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -190,7 +212,9 @@ export function NewBookingPage() {
                         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>
                           {r.category} · {r.location} · {r.capacity} seats
                           {isStudent && r.hourly_cost ? (
-                            <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}> · 🪙 {r.hourly_cost} tokens/hr</span>
+                            <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                              {' '}· <Coins size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {r.hourly_cost} tokens/hr
+                            </span>
                           ) : null}
                         </div>
                       </div>
@@ -214,11 +238,23 @@ export function NewBookingPage() {
                 </div>
               )}
 
-              <div className="input-group">
-                <label className="input-label">Date</label>
-                <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+              {/* Start Date & End Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                <div className="input-group">
+                  <label className="input-label">Start Date</label>
+                  <input className="input" type="date" value={startDate} onChange={e => {
+                    setStartDate(e.target.value);
+                    // Auto-set end date if it's before start date
+                    if (endDate < e.target.value) setEndDate(e.target.value);
+                  }} required />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">End Date</label>
+                  <input className="input" type="date" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} required />
+                </div>
               </div>
 
+              {/* Start Time & End Time */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                 <div className="input-group">
                   <label className="input-label">Start Time</label>
@@ -230,8 +266,15 @@ export function NewBookingPage() {
                 </div>
               </div>
 
+              {/* Duration display */}
+              {startDate && endDate && startTime && endTime && (
+                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <Clock size={14} /> Duration: <strong>{getDurationDisplay()}</strong>
+                </div>
+              )}
+
               {/* Token Cost Preview for Students */}
-              {isStudent && selectedResource?.hourly_cost && date && startTime && endTime && (
+              {isStudent && selectedResource?.hourly_cost && startDate && endDate && startTime && endTime && (
                 <div style={{
                   padding: 'var(--space-4)',
                   borderRadius: 'var(--radius-md)',
@@ -243,12 +286,12 @@ export function NewBookingPage() {
                       <Coins size={18} style={{ color: hasEnoughTokens ? 'var(--color-success)' : 'var(--color-danger)' }} />
                       <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>Token Cost</span>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)' }}>
-                      🪙 {tokenCost}
+                    <div style={{ fontWeight: 700, fontSize: 'var(--font-size-lg)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Coins size={16} /> {tokenCost}
                     </div>
                   </div>
                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-1)' }}>
-                    {selectedResource.hourly_cost} tokens/hr × {Math.max(1, Math.ceil((new Date(`${date}T${endTime}:00`).getTime() - new Date(`${date}T${startTime}:00`).getTime()) / 3600000))} hours
+                    {selectedResource.hourly_cost} tokens/hr × {getDurationDisplay()}
                     {!hasEnoughTokens && (
                       <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}> — Insufficient! You have {tokenBalance} tokens</span>
                     )}
@@ -289,8 +332,8 @@ export function NewBookingPage() {
                 <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: 1 }}>Booking Summary</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><FileText size={14} style={{ color: 'var(--color-text-muted)' }} /> {selectedResource?.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><CalendarDays size={14} style={{ color: 'var(--color-text-muted)' }} /> {date}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><Clock size={14} style={{ color: 'var(--color-text-muted)' }} /> {startTime} – {endTime}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><CalendarDays size={14} style={{ color: 'var(--color-text-muted)' }} /> {startDate}{startDate !== endDate ? ` → ${endDate}` : ''}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><Clock size={14} style={{ color: 'var(--color-text-muted)' }} /> {startTime} – {endTime} ({getDurationDisplay()})</div>
                   {attendeeCount && <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}><Users size={14} style={{ color: 'var(--color-text-muted)' }} /> {attendeeCount} attendees</div>}
                   {isStudent && tokenCost > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-primary)', fontWeight: 600 }}>
