@@ -9,6 +9,7 @@ export default defineConfig({
       '/api/v1/tenants': { target: 'http://localhost:80', changeOrigin: true },
       '/api/v1/users': { target: 'http://localhost:80', changeOrigin: true },
       '/api/v1/resources': { target: 'http://localhost:80', changeOrigin: true },
+      '/api/v1/st-resources': { target: 'http://localhost:80', changeOrigin: true },
       '/api/v1/bookings': { target: 'http://localhost:80', changeOrigin: true },
       '/api/v1/notifications': { target: 'http://localhost:80', changeOrigin: true },
       '/uploads': {
