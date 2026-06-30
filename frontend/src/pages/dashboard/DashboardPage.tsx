@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/api';
 import {
-  Monitor, CalendarDays, Clock, Users, TrendingUp, ArrowRight, Plus,
+  Monitor, CalendarDays, Clock, Users, TrendingUp, ArrowRight, Plus, Coins,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -30,6 +30,9 @@ export function DashboardPage() {
   const [stats, setStats] = useState<Stats>({ totalResources: 0, activeBookings: 0, pendingApprovals: 0, totalUsers: 0 });
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
+  const [monthlyQuota, setMonthlyQuota] = useState<number | null>(null);
+  const isStudent = claims?.app_role === 'student';
 
   useEffect(() => {
     async function load() {
@@ -60,12 +63,34 @@ export function DashboardPage() {
       }
     }
     load();
+
+    // Fetch token balance for students
+    if (claims?.app_role === 'student') {
+      api.get<any>('/users/me/tokens').then(res => {
+        if (res.success && res.data?.balance) {
+          setTokenBalance(res.data.balance.balance);
+          setMonthlyQuota(res.data.balance.monthly_quota);
+        }
+      });
+    }
   }, []);
 
   const statCards = [
     { label: 'Total Resources', value: stats.totalResources, icon: Monitor, color: 'var(--color-primary)', bg: 'var(--color-primary-light)' },
     { label: 'Active Bookings', value: stats.activeBookings, icon: CalendarDays, color: 'var(--color-success)', bg: 'var(--color-success-light)' },
-    { label: 'Pending Approvals', value: stats.pendingApprovals, icon: Clock, color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
+    ...(isStudent && tokenBalance !== null ? [{
+      label: `🪙 Token Balance (${monthlyQuota}/month)`,
+      value: tokenBalance,
+      icon: Coins,
+      color: tokenBalance > 20 ? 'var(--color-primary)' : 'var(--color-danger)',
+      bg: tokenBalance > 20 ? 'var(--color-primary-light)' : 'var(--color-danger-light)',
+    }] : [{
+      label: 'Pending Approvals',
+      value: stats.pendingApprovals,
+      icon: Clock,
+      color: 'var(--color-warning)',
+      bg: 'var(--color-warning-light)',
+    }]),
     { label: 'Your Role', value: claims.app_role?.replace('_', ' ') || 'member', icon: Users, color: 'var(--color-info)', bg: 'var(--color-info-light)', isText: true },
   ];
 

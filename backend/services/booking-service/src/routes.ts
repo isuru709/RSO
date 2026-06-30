@@ -112,7 +112,7 @@ export async function bookingRoutes(server: FastifyInstance): Promise<void> {
     // Verify resource exists and belongs to user's tenant (or is global)
     const { data: resource } = await supabase
       .from('resources')
-      .select('id, tenant_id, is_bookable, status, category, allowed_roles')
+      .select('id, tenant_id, is_bookable, status, category, allowed_roles, hourly_cost')
       .eq('id', body.resource_id)
       .single();
 
@@ -211,6 +211,43 @@ export async function bookingRoutes(server: FastifyInstance): Promise<void> {
         throw ApiError.conflict('This time slot was just booked by another user');
       }
       throw error;
+    }
+
+    // ---- Student Token Deduction ----
+    let tokensDeducted = 0;
+    if (user.appRole === 'student' && resource.category === 'EQUIPMENT' && resource.hourly_cost) {
+      const startMs = new Date(body.start_time as string).getTime();
+      const endMs = new Date(body.end_time as string).getTime();
+      const hours = Math.max(1, Math.ceil((endMs - startMs) / (1000 * 60 * 60)));
+      tokensDeducted = Math.ceil(resource.hourly_cost * hours);
+
+      // Check balance
+      const { data: tokenBalance } = await supabase
+        .from('student_token_balances')
+        .select('id, balance')
+        .eq('firebase_uid', user.sub)
+        .single();
+
+      if (!tokenBalance || tokenBalance.balance < tokensDeducted) {
+        // Rollback: delete the booking we just created
+        await supabase.from('bookings').delete().eq('id', booking.id);
+        throw ApiError.badRequest(`Insufficient tokens. Need ${tokensDeducted}, have ${tokenBalance?.balance || 0}.`);
+      }
+
+      // Deduct tokens
+      await supabase
+        .from('student_token_balances')
+        .update({ balance: tokenBalance.balance - tokensDeducted })
+        .eq('id', tokenBalance.id);
+
+      // Log transaction
+      await supabase.from('token_transactions').insert({
+        firebase_uid: user.sub,
+        booking_id: booking.id,
+        amount: -tokensDeducted,
+        type: 'booking_deduction',
+        description: `Booked equipment for ${hours}h (${resource.hourly_cost} tokens/h)`,
+      });
     }
 
     // Publish event for notification service
@@ -333,6 +370,46 @@ export async function bookingRoutes(server: FastifyInstance): Promise<void> {
     const { data, error } = await query.select().single();
 
     if (error || !data) throw ApiError.notFound('Active booking');
+
+    // ---- Student Token Refund (50%) ----
+    if (data.booked_by) {
+      // Check if the booker is a student with a token record
+      const { data: tokenBalance } = await supabase
+        .from('student_token_balances')
+        .select('id, balance')
+        .eq('firebase_uid', data.booked_by)
+        .single();
+
+      if (tokenBalance) {
+        // Find the original deduction for this booking
+        const { data: deduction } = await supabase
+          .from('token_transactions')
+          .select('amount')
+          .eq('booking_id', id)
+          .eq('type', 'booking_deduction')
+          .single();
+
+        if (deduction) {
+          const refundAmount = Math.floor(Math.abs(deduction.amount) / 2); // 50% refund
+          if (refundAmount > 0) {
+            await supabase
+              .from('student_token_balances')
+              .update({ balance: tokenBalance.balance + refundAmount })
+              .eq('id', tokenBalance.id);
+
+            await supabase.from('token_transactions').insert({
+              firebase_uid: data.booked_by,
+              booking_id: id,
+              amount: refundAmount,
+              type: 'booking_refund',
+              description: `50% refund for cancelled booking (${refundAmount} of ${Math.abs(deduction.amount)} tokens)`,
+            });
+
+            logger.info({ bookingId: id, refund: refundAmount }, 'Student tokens partially refunded');
+          }
+        }
+      }
+    }
 
     try {
       await publishEvent('booking-events', {
@@ -477,6 +554,39 @@ export async function bookingRoutes(server: FastifyInstance): Promise<void> {
       logger.info({ updated }, 'Booking statuses transitioned');
     }
 
-    sendSuccess(reply, { transitioned: updated });
+    // ---- Monthly Token Renewal ----
+    let renewed = 0;
+    try {
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7); // "2026-07"
+
+      // Find students whose tokens haven't been renewed this month
+      const { data: staleBalances } = await supabase
+        .from('student_token_balances')
+        .select('id, firebase_uid, monthly_quota, last_renewed_at')
+        .lt('last_renewed_at', `${currentMonth}-01T00:00:00Z`);
+
+      if (staleBalances && staleBalances.length > 0) {
+        for (const sb of staleBalances) {
+          await supabase
+            .from('student_token_balances')
+            .update({ balance: sb.monthly_quota, last_renewed_at: now.toISOString() })
+            .eq('id', sb.id);
+
+          await supabase.from('token_transactions').insert({
+            firebase_uid: sb.firebase_uid,
+            amount: sb.monthly_quota,
+            type: 'monthly_renewal',
+            description: `Monthly token renewal for ${currentMonth}`,
+          });
+          renewed++;
+        }
+        logger.info({ renewed }, 'Student tokens renewed for new month');
+      }
+    } catch (err) {
+      logger.warn({ err }, 'Token renewal failed (non-fatal)');
+    }
+
+    sendSuccess(reply, { transitioned: updated, tokens_renewed: renewed });
   });
 }

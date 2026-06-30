@@ -181,14 +181,19 @@ export function NewResourcePage() {
             </div>
           </div>
 
-          {/* Hourly Cost */}
-          <div className="input-group">
-            <label className="input-label" htmlFor="res-cost">Hourly Cost (optional)</label>
-            <div style={{ position: 'relative' }}>
-              <DollarSign size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-              <input id="res-cost" className="input" type="number" step="0.01" placeholder="0.00" value={hourlyCost} onChange={e => setHourlyCost(e.target.value)} style={{ paddingLeft: 40 }} />
+          {/* Hourly Token Cost (Equipment only) */}
+          {(resourceType === 'equipment' || resourceType === 'other') && (
+            <div className="input-group">
+              <label className="input-label" htmlFor="res-cost">🪙 Hourly Token Cost</label>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)' }}>
+                Students will spend this many tokens per hour when booking this equipment
+              </p>
+              <div style={{ position: 'relative' }}>
+                <DollarSign size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input id="res-cost" className="input" type="number" step="1" min="0" placeholder="e.g., 10" value={hourlyCost} onChange={e => setHourlyCost(e.target.value)} style={{ paddingLeft: 40 }} />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Submit */}
           <button className="btn btn-primary btn-lg btn-full" type="submit" disabled={loading} style={{ marginTop: 'var(--space-2)' }}>

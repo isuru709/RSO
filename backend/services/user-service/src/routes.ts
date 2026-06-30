@@ -100,6 +100,22 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
 
     if (profileErr) throw profileErr;
 
+    // Create token balance for new student
+    await supabase.from('student_token_balances').insert({
+      firebase_uid: user.sub,
+      tenant_id: tenant.id,
+      balance: 100,
+      monthly_quota: 100,
+    });
+
+    // Log initial token grant
+    await supabase.from('token_transactions').insert({
+      firebase_uid: user.sub,
+      amount: 100,
+      type: 'monthly_renewal',
+      description: 'Initial token allocation on signup',
+    });
+
     // Set Firebase custom claims
     await setUserClaims(user.sub, tenant.id, 'student');
 
@@ -527,5 +543,101 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
 
     logger.info({ uid, avatarUrl }, 'Avatar uploaded');
     sendSuccess(reply, { avatar_url: avatarUrl });
+  });
+
+  // ========================================================================
+  // GET /api/v1/users/me/tokens — Get own token balance & recent transactions
+  // ========================================================================
+  server.get('/api/v1/users/me/tokens', {
+    preHandler: [authMiddleware],
+  }, async (request, reply) => {
+    const uid = request.user!.sub;
+
+    const { data: balance } = await supabase
+      .from('student_token_balances')
+      .select('*')
+      .eq('firebase_uid', uid)
+      .single();
+
+    if (!balance) {
+      return sendSuccess(reply, { balance: null, transactions: [] });
+    }
+
+    const { data: transactions } = await supabase
+      .from('token_transactions')
+      .select('*')
+      .eq('firebase_uid', uid)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    sendSuccess(reply, { balance, transactions: transactions || [] });
+  });
+
+  // ========================================================================
+  // PUT /api/v1/users/tokens/bulk — Admin: set monthly quota for ALL students
+  // ========================================================================
+  server.put('/api/v1/users/tokens/bulk', {
+    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+  }, async (request, reply) => {
+    const { monthly_quota, reset_balance } = request.body as { monthly_quota: number; reset_balance?: boolean };
+
+    if (!monthly_quota || monthly_quota < 0) {
+      throw ApiError.badRequest('monthly_quota must be a positive number');
+    }
+
+    const user = request.user!;
+    let query = supabase.from('student_token_balances').update({
+      monthly_quota,
+      ...(reset_balance ? { balance: monthly_quota } : {}),
+    });
+
+    // Tenant admin only updates their own tenant's students
+    if (user.appRole === 'tenant_admin') {
+      query = query.eq('tenant_id', user.tenantId);
+    }
+
+    const { error, count } = await query.select('id');
+    if (error) throw error;
+
+    logger.info({ monthly_quota, reset_balance, updatedBy: user.sub }, 'Bulk token update');
+    sendSuccess(reply, { message: `Updated ${count || 0} students`, monthly_quota });
+  });
+
+  // ========================================================================
+  // PUT /api/v1/users/:uid/tokens — Admin: adjust a specific student's tokens
+  // ========================================================================
+  server.put('/api/v1/users/:uid/tokens', {
+    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+  }, async (request, reply) => {
+    const { uid } = request.params as { uid: string };
+    const { balance, monthly_quota } = request.body as { balance?: number; monthly_quota?: number };
+
+    const updates: Record<string, any> = {};
+    if (balance !== undefined) updates.balance = balance;
+    if (monthly_quota !== undefined) updates.monthly_quota = monthly_quota;
+
+    if (Object.keys(updates).length === 0) {
+      throw ApiError.badRequest('Provide balance or monthly_quota to update');
+    }
+
+    const { data, error } = await supabase
+      .from('student_token_balances')
+      .update(updates)
+      .eq('firebase_uid', uid)
+      .select()
+      .single();
+
+    if (error || !data) throw ApiError.notFound('Student token balance');
+
+    // Log admin adjustment
+    await supabase.from('token_transactions').insert({
+      firebase_uid: uid,
+      amount: balance !== undefined ? balance - (data.balance || 0) : 0,
+      type: 'admin_adjustment',
+      description: `Adjusted by admin ${request.user!.sub}`,
+    });
+
+    logger.info({ uid, updates, adjustedBy: request.user!.sub }, 'Student tokens adjusted');
+    sendSuccess(reply, data);
   });
 }
