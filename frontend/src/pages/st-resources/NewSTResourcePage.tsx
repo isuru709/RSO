@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, BookOpen, MapPin, FileText, DollarSign, Share2 } fr
 const stSuggestions = [
   'Old Notebooks', 'Short Notes', 'Past Papers', 'Circuit Boards', 'Calculators',
   'Lab Coats', 'Drawing Tools', 'Arduino Kits', 'Breadboards', 'Multimeters',
-  'Textbooks', 'Reference Books', 'USB Drives', 'Soldering Kits', 'Raspberry Pi',
+  'Textbooks', 'Reference Books', 'USB Drives', 'Soldering Kits', 'Raspberry Pi', 'Other',
 ];
 
 const conditions = [
