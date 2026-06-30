@@ -385,7 +385,7 @@ CREATE TABLE IF NOT EXISTS public.st_resources (
   pickup_location TEXT,
   hourly_token_cost INTEGER DEFAULT 0,
   is_available BOOLEAN DEFAULT true,
-  created_by TEXT NOT NULL,
+  created_by TEXT NOT NULL REFERENCES user_profiles(firebase_uid) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
