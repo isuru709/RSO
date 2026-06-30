@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
-import { X, Clock, CalendarDays, Coins, Loader2, HandCoins } from 'lucide-react';
+import { X, Clock, Coins, Loader2, HandCoins } from 'lucide-react';
 
 interface STResource {
   id: string;

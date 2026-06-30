@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { HandCoins, Check, X, RotateCcw, User, Mail, Phone, IdCard, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
@@ -44,7 +43,6 @@ export function STBorrowsPage() {
   const [borrows, setBorrows] = useState<STBorrow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'my' | 'lent'>('my');
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const loadBorrows = () => {
