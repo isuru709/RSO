@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 
 # Build output
 dist/
@@ -14,6 +13,9 @@ dist/
 # Firebase service account keys
 *-firebase-adminsdk-*.json
 config/firebase-service-account.json
+
+# Scripts with hardcoded secrets (blocked by GitHub push protection)
+backend/scripts/verify-rls.ts
 
 # SSL Certificates (Origin Cert)
 infra/gateway/ssl/*.pem
