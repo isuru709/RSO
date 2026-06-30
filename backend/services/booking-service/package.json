@@ -1,0 +1,27 @@
+{
+  "name": "@rso/booking-service",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:integration": "node --experimental-vm-modules node_modules/.bin/jest --testPathPattern=integration"
+  },
+  "dependencies": {
+    "@rso/shared": "*",
+    "fastify": "^5.3.0",
+    "@fastify/cors": "^11.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "@types/jest": "^29.5.0"
+  }
+}

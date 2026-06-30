@@ -1,0 +1,9 @@
+# ============================================================================
+# RSO Platform — Kubernetes Namespace
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rso
+  labels:
+    app.kubernetes.io/part-of: campus-rso

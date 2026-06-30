@@ -1,0 +1,26 @@
+{
+  "name": "@rso/notification-service",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@rso/shared": "*",
+    "fastify": "^5.3.0",
+    "nodemailer": "^6.9.0",
+    "resend": "^4.1.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^6.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

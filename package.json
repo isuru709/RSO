@@ -1,0 +1,28 @@
+{
+  "name": "campus-rso-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend/services/shared",
+    "backend/services/tenant-service",
+    "backend/services/user-service",
+    "backend/services/resource-service",
+    "backend/services/booking-service",
+    "backend/services/notification-service",
+    "frontend"
+  ],
+  "scripts": {
+    "build:backend": "npm run build --workspaces --if-present",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:tenant": "npm run dev -w backend/services/tenant-service",
+    "dev:user": "npm run dev -w backend/services/user-service",
+    "dev:resource": "npm run dev -w backend/services/resource-service",
+    "dev:booking": "npm run dev -w backend/services/booking-service",
+    "dev:notification": "npm run dev -w backend/services/notification-service",
+    "clean": "rimraf backend/services/*/dist frontend/dist"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "tsx": "^4.22.4"
+  }
+}

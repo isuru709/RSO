@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="CampusRSO — Multi-Tenant Campus Resource Sharing Platform. Manage labs, halls, equipment bookings for universities." />
+    <meta name="theme-color" content="#0a0e27" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>CampusRSO — Resource Sharing Platform</title>
+    <style>
+      /* Critical above-the-fold CSS */
+      body { margin: 0; background: #0a0e27; font-family: 'Inter', sans-serif; }
+      #root { min-height: 100dvh; }
+      .initial-loader {
+        display: flex; align-items: center; justify-content: center;
+        min-height: 100dvh; flex-direction: column; gap: 16px; color: #a0a6cc;
+      }
+      .initial-spinner {
+        width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: #3b82f6; border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="initial-loader">
+        <div class="initial-spinner"></div>
+        <span>Loading CampusRSO...</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

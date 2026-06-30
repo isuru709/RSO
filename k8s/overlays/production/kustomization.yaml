@@ -1,0 +1,24 @@
+# ============================================================================
+# Kustomization — Production Overlay
+# ============================================================================
+# ArgoCD watches this overlay. The CI pipeline updates `newTag` on each push.
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rso
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/isuru709/rso-tenant-service
+    newTag: latest
+  - name: ghcr.io/isuru709/rso-user-service
+    newTag: latest
+  - name: ghcr.io/isuru709/rso-resource-service
+    newTag: latest
+  - name: ghcr.io/isuru709/rso-booking-service
+    newTag: latest
+  - name: ghcr.io/isuru709/rso-notification-service
+    newTag: latest

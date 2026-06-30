@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+*.js.map
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+config/firebase-service-account.json
+
+# SSL Certificates (Origin Cert)
+infra/gateway/ssl/*.pem
+nginx/ssl/
+
+# Sensitive reference files
+supa base.txt
+firebase sdk.txt
+resend.txt
+cloudflare.ini
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temp files
+tmp/
+temp/

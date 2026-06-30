@@ -1,0 +1,35 @@
+/**
+ * Resource Service — Entry Point
+ */
+
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import { logger, errorHandler } from '@rso/shared';
+import { resourceRoutes } from './routes';
+
+const server = Fastify({ logger: false, ignoreTrailingSlash: true });
+
+server.register(cors, { origin: true });
+server.setErrorHandler(errorHandler);
+
+server.get('/health', async () => ({
+  status: 'ok',
+  service: 'resource-service',
+  timestamp: new Date().toISOString(),
+  uptime: process.uptime(),
+}));
+
+server.register(resourceRoutes);
+
+const start = async () => {
+  try {
+    const port = parseInt(process.env.RESOURCE_SERVICE_PORT || '3003', 10);
+    await server.listen({ port, host: '0.0.0.0' });
+    logger.info({ port, service: 'resource-service' }, 'Resource Service started');
+  } catch (err) {
+    logger.error(err, 'Resource Service failed to start');
+    process.exit(1);
+  }
+};
+
+start();

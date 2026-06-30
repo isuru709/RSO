@@ -1,0 +1,13 @@
+# ============================================================================
+# ConfigMap — Non-secret configuration
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rso-config
+  namespace: rso
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  OPTIMIZATION_SCAN_INTERVAL: "86400000"
+  FIREBASE_PROJECT_ID: "university-rso"

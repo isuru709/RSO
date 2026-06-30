@@ -1,0 +1,210 @@
+# ============================================================================
+# Multi-Tenant Campus Resource Sharing Platform — Docker Compose
+# ============================================================================
+# Usage:
+#   docker compose -f infra/docker-compose.yml up --build -d
+#   docker compose -f infra/docker-compose.yml logs -f
+#   docker compose -f infra/docker-compose.yml down
+# ============================================================================
+
+networks:
+  rso-internal:
+    driver: bridge
+
+services:
+  # ==========================================================================
+  # API Gateway — Nginx (only container exposing ports to host)
+  # ==========================================================================
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: rso-gateway
+    ports:
+      - "${GATEWAY_HTTP_PORT:-80}:80"
+      - "${GATEWAY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${SSL_CERT_PATH:-./gateway/ssl/origin.pem}:/etc/nginx/ssl/origin.pem:ro
+      - ${SSL_KEY_PATH:-./gateway/ssl/origin-key.pem}:/etc/nginx/ssl/origin-key.pem:ro
+      - uploads:/uploads:ro
+    depends_on:
+      tenant-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      resource-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  # ==========================================================================
+  # Tenant Service — Faculty onboarding and tenant CRUD
+  # ==========================================================================
+  tenant-service:
+    image: infra-tenant-service
+    build:
+      context: ../..
+      dockerfile: backend/services/tenant-service/Dockerfile
+    container_name: rso-tenant-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TENANT_SERVICE_PORT=3001
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/firebase-service-account.json
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "3001"
+
+  # ==========================================================================
+  # User Profile Service — Signup, profile CRUD, role management
+  # ==========================================================================
+  user-service:
+    build:
+      context: ../..
+      dockerfile: backend/services/user-service/Dockerfile
+    container_name: rso-user-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - USER_SERVICE_PORT=3002
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/firebase-service-account.json
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+      - uploads:/app/uploads
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "3002"
+
+  # ==========================================================================
+  # Resource Catalog Service — CRUD + search for halls, labs, equipment
+  # ==========================================================================
+  resource-service:
+    build:
+      context: ../..
+      dockerfile: backend/services/resource-service/Dockerfile
+    container_name: rso-resource-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RESOURCE_SERVICE_PORT=3003
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/firebase-service-account.json
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "3003"
+
+  # ==========================================================================
+  # Booking & Optimization Engine — Reservations, conflict detection, utilization
+  # ==========================================================================
+  booking-service:
+    build:
+      context: ../..
+      dockerfile: backend/services/booking-service/Dockerfile
+    container_name: rso-booking-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - BOOKING_SERVICE_PORT=3004
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/firebase-service-account.json
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+      - OPTIMIZATION_SCAN_INTERVAL=${OPTIMIZATION_SCAN_INTERVAL:-86400000}
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "3004"
+
+  # ==========================================================================
+  # Notification Service — Event consumer, email dispatch, in-app inbox
+  # ==========================================================================
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: backend/services/notification-service/Dockerfile
+    container_name: rso-notification-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NOTIFICATION_SERVICE_PORT=3005
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/firebase-service-account.json
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-resend}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - NOTIFICATION_FROM_EMAIL=${NOTIFICATION_FROM_EMAIL:-onboarding@resend.dev}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "3005"
+
+  # ==========================================================================
+  # Redis — Caching, rate limiting, Redis Streams message broker
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: rso-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  redis-data:
+    driver: local
+  uploads:
+    driver: local

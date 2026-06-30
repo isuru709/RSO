@@ -1,0 +1,416 @@
+# ============================================================================
+# Backend Microservices — Deployments & Services
+# ============================================================================
+# Each service uses environment variables from the rso-secrets Secret
+# and the rso-config ConfigMap.
+# ============================================================================
+
+# ============================================================================
+# Tenant Service
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-service
+  namespace: rso
+  labels:
+    app: tenant-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenant-service
+  template:
+    metadata:
+      labels:
+        app: tenant-service
+    spec:
+      containers:
+        - name: tenant-service
+          image: ghcr.io/isuru709/rso-tenant-service:latest
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: rso-secrets
+            - configMapRef:
+                name: rso-config
+          env:
+            - name: TENANT_SERVICE_PORT
+              value: "3001"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/config/firebase-service-account.json"
+          volumeMounts:
+            - name: firebase-sa
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: firebase-sa
+          secret:
+            secretName: firebase-service-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-service
+  namespace: rso
+spec:
+  selector:
+    app: tenant-service
+  ports:
+    - port: 3001
+      targetPort: 3001
+
+---
+# ============================================================================
+# User Service
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: rso
+  labels:
+    app: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: ghcr.io/isuru709/rso-user-service:latest
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - secretRef:
+                name: rso-secrets
+            - configMapRef:
+                name: rso-config
+          env:
+            - name: USER_SERVICE_PORT
+              value: "3002"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/config/firebase-service-account.json"
+          volumeMounts:
+            - name: firebase-sa
+              mountPath: /app/config
+              readOnly: true
+            - name: uploads
+              mountPath: /app/uploads
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: firebase-sa
+          secret:
+            secretName: firebase-service-account
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: rso
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 3002
+      targetPort: 3002
+
+---
+# ============================================================================
+# Resource Service
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-service
+  namespace: rso
+  labels:
+    app: resource-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resource-service
+  template:
+    metadata:
+      labels:
+        app: resource-service
+    spec:
+      containers:
+        - name: resource-service
+          image: ghcr.io/isuru709/rso-resource-service:latest
+          ports:
+            - containerPort: 3003
+          envFrom:
+            - secretRef:
+                name: rso-secrets
+            - configMapRef:
+                name: rso-config
+          env:
+            - name: RESOURCE_SERVICE_PORT
+              value: "3003"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/config/firebase-service-account.json"
+          volumeMounts:
+            - name: firebase-sa
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: firebase-sa
+          secret:
+            secretName: firebase-service-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resource-service
+  namespace: rso
+spec:
+  selector:
+    app: resource-service
+  ports:
+    - port: 3003
+      targetPort: 3003
+
+---
+# ============================================================================
+# Booking Service
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booking-service
+  namespace: rso
+  labels:
+    app: booking-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: booking-service
+  template:
+    metadata:
+      labels:
+        app: booking-service
+    spec:
+      containers:
+        - name: booking-service
+          image: ghcr.io/isuru709/rso-booking-service:latest
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - secretRef:
+                name: rso-secrets
+            - configMapRef:
+                name: rso-config
+          env:
+            - name: BOOKING_SERVICE_PORT
+              value: "3004"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/config/firebase-service-account.json"
+          volumeMounts:
+            - name: firebase-sa
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: firebase-sa
+          secret:
+            secretName: firebase-service-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: booking-service
+  namespace: rso
+spec:
+  selector:
+    app: booking-service
+  ports:
+    - port: 3004
+      targetPort: 3004
+
+---
+# ============================================================================
+# Notification Service
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: rso
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: ghcr.io/isuru709/rso-notification-service:latest
+          ports:
+            - containerPort: 3005
+          envFrom:
+            - secretRef:
+                name: rso-secrets
+            - configMapRef:
+                name: rso-config
+          env:
+            - name: NOTIFICATION_SERVICE_PORT
+              value: "3005"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/app/config/firebase-service-account.json"
+          volumeMounts:
+            - name: firebase-sa
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: firebase-sa
+          secret:
+            secretName: firebase-service-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: rso
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 3005
+      targetPort: 3005
+
+---
+# ============================================================================
+# Uploads PVC (shared by user-service)
+# ============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads-pvc
+  namespace: rso
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,110 @@
+%%======================================================================
+%% Multi-Tenant Campus Resource Sharing Platform
+%% Request Flow: Client -> Cloudflare -> DO Droplet (Microservices) ->
+%%               Firebase Auth (token validation) + Supabase Postgres
+%%======================================================================
+flowchart TB
+
+    User(["👤 End User<br/>Student / Lecturer / Faculty Admin"])
+
+    %% ------------------------------------------------------------------
+    %% EDGE / CDN LAYER
+    %% ------------------------------------------------------------------
+    subgraph CF["Cloudflare Edge — pro.isuruhub.site"]
+        direction TB
+        DNSREC["DNS A/CNAME Record"]
+        EDGETLS["Edge TLS Termination<br/>(Client to Cloudflare)"]
+        WAF["WAF / Bot Mgmt / Rate Limiting / DDoS Protection"]
+        ORIGINPULL["Full (Strict) Mode:<br/>Re-encrypts to Origin using<br/>Cloudflare Origin Certificate"]
+        DNSREC --> EDGETLS --> WAF --> ORIGINPULL
+    end
+
+    %% ------------------------------------------------------------------
+    %% COMPUTE LAYER — DIGITALOCEAN DROPLET
+    %% ------------------------------------------------------------------
+    subgraph DO["DigitalOcean Droplet — Docker Host"]
+        direction TB
+
+        subgraph GW["API Gateway / Reverse Proxy Tier"]
+            PROXY["Nginx or Traefik<br/>• Terminates Origin Cert (Full Strict)<br/>• Path-based routing<br/>• Per-route rate limiting<br/>• Load balancing across replicas"]
+        end
+
+        subgraph MS["Microservices (independent Docker containers)"]
+            direction LR
+            TENANT["Tenant Service<br/><i>faculty onboarding,<br/>tenant settings</i>"]
+            USERSVC["User Profile Service<br/><i>role mgmt, Firebase<br/>UID <-> tenant mapping</i>"]
+            RESOURCE["Resource Catalog Service<br/><i>halls, labs, equipment<br/>CRUD + search</i>"]
+            BOOKING["Booking &amp; Optimization<br/>Engine<br/><i>reservations, conflict<br/>detection, utilization scoring</i>"]
+            NOTIFY["Notification Service<br/><i>email / push / SMS<br/>dispatch</i>"]
+        end
+
+        subgraph DATA["Supporting Infrastructure (in-cluster)"]
+            direction LR
+            REDIS[("Redis<br/>• Resource availability cache<br/>• Rate-limit counters<br/>• Session/short-lived lookups")]
+            QUEUE[["Message Broker<br/>(RabbitMQ / Redis Streams)<br/>• Async optimization jobs<br/>• Event fan-out to Notification Svc"]]
+        end
+
+        PROXY -->|"/api/v1/tenants/*"| TENANT
+        PROXY -->|"/api/v1/users/*"| USERSVC
+        PROXY -->|"/api/v1/resources/*"| RESOURCE
+        PROXY -->|"/api/v1/bookings/*"| BOOKING
+        PROXY -->|"/api/v1/notifications/*"| NOTIFY
+
+        BOOKING <-->|"cache availability /<br/>invalidate on booking change"| REDIS
+        RESOURCE <-->|"cache catalog reads"| REDIS
+
+        BOOKING -->|"publish: booking.created<br/>booking.conflict_detected<br/>resource.underutilized"| QUEUE
+        QUEUE -->|"consume events"| NOTIFY
+        QUEUE -->|"consume: nightly utilization<br/>scan / optimization batch job"| BOOKING
+    end
+
+    ORIGINPULL -->|"HTTPS (Origin Cert validated)"| PROXY
+
+    %% ------------------------------------------------------------------
+    %% IDENTITY LAYER — FIREBASE
+    %% ------------------------------------------------------------------
+    subgraph FIREBASE["Firebase Authentication (managed, external)"]
+        direction TB
+        FBLOGIN["Sign-in methods:<br/>OTP / Email-Password / Social Login"]
+        FBTOKEN["Issues signed ID Token (JWT)<br/>+ Custom Claims:<br/>role='authenticated', tenant_id, app_role"]
+        FBLOGIN --> FBTOKEN
+    end
+
+    User -. "1. Authenticate" .-> FBLOGIN
+    FBTOKEN -. "2. Returns ID Token" .-> User
+    User -->|"3. HTTPS request<br/>Authorization: Bearer &lt;ID Token&gt;"| CF
+
+    TENANT -.->|"4. Verify token signature<br/>(Firebase Admin SDK / JWKS)"| FBTOKEN
+    USERSVC -.->|"Verify token"| FBTOKEN
+    RESOURCE -.->|"Verify token"| FBTOKEN
+    BOOKING -.->|"Verify token"| FBTOKEN
+
+    %% ------------------------------------------------------------------
+    %% DATA LAYER — SUPABASE
+    %% ------------------------------------------------------------------
+    subgraph SUPABASE["Supabase (managed PostgreSQL)"]
+        direction TB
+        TPA["Third-Party Auth Integration<br/>(trusts Firebase JWKS directly)"]
+        PGREST["PostgREST / Data API"]
+        RLSLAYER["Row Level Security<br/>tenant_id isolation policies<br/>(defense-in-depth)"]
+        PGDB[("PostgreSQL<br/>tenants, user_profiles, resources,<br/>bookings, optimization_logs, notifications")]
+        TPA --> PGREST --> RLSLAYER --> PGDB
+    end
+
+    TENANT -->|"5. Query (service-role key,<br/>tenant_id enforced in app logic + RLS)"| PGREST
+    USERSVC -->|"Query"| PGREST
+    RESOURCE -->|"Query"| PGREST
+    BOOKING -->|"Query + writes optimization_logs"| PGREST
+    NOTIFY -->|"Read recipient profile,<br/>write notification record"| PGREST
+
+    classDef edgeStyle fill:#f6821f,stroke:#9c4f00,color:#fff
+    classDef computeStyle fill:#0080ff,stroke:#004c99,color:#fff
+    classDef authStyle fill:#ffca28,stroke:#a87900,color:#000
+    classDef dataStyle fill:#3ecf8e,stroke:#1f7a52,color:#000
+    classDef infraStyle fill:#6c5ce7,stroke:#3d2e9c,color:#fff
+
+    class CF edgeStyle
+    class DO,GW,MS computeStyle
+    class DATA infraStyle
+    class FIREBASE authStyle
+    class SUPABASE dataStyle
