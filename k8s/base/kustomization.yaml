@@ -11,4 +11,5 @@ resources:
   - configmap.yaml
   - redis.yaml
   - services.yaml
+  - frontend.yaml
   - gateway.yaml
