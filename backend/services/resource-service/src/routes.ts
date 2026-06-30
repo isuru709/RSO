@@ -82,14 +82,29 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
 
   // ========================================================================
   // POST /api/v1/resources — Create a resource
+  // Students can only create ST_RESOURCE; admins can create any type.
   // ========================================================================
   server.post('/api/v1/resources', {
-    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+    preHandler: [authMiddleware],
   }, async (request, reply) => {
     const body = request.body as Record<string, unknown>;
-    let tenantId: string | null = request.user!.tenantId;
-    if (request.user!.appRole === 'main_admin') {
-      // Main admin can create campus-wide resources (null) or assign to a specific tenant
+    const user = request.user!;
+
+    // Permission check
+    const allowedCreators = ['main_admin', 'tenant_admin', 'student'];
+    if (!allowedCreators.includes(user.appRole)) {
+      throw ApiError.forbidden('You do not have permission to create resources');
+    }
+
+    // Students can ONLY create ST_RESOURCE
+    if (user.appRole === 'student') {
+      if (body.category !== 'ST_RESOURCE' || body.resource_type !== 'student_resource') {
+        throw ApiError.forbidden('Students can only create Student Shared Resources (ST Resource)');
+      }
+    }
+
+    let tenantId: string | null = user.tenantId;
+    if (user.appRole === 'main_admin') {
       tenantId = body.tenant_id ? (body.tenant_id as string) : null;
     }
 
@@ -100,46 +115,67 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
         name: body.name,
         resource_type: body.resource_type,
         category: body.category,
-        capacity: body.capacity,
+        capacity: body.capacity || 1,
         location: body.location,
         equipment_features: body.equipment_features,
         hourly_cost: body.hourly_cost,
         image_url: body.image_url,
         is_bookable: body.is_bookable ?? true,
-        created_by: request.user!.sub,
+        created_by: user.sub,
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    logger.info({ resourceId: data.id, tenantId }, 'Resource created');
+    logger.info({ resourceId: data.id, tenantId, category: body.category }, 'Resource created');
     sendSuccess(reply, data, 201);
   });
 
   // ========================================================================
   // PUT /api/v1/resources/:id — Update a resource
+  // ST_RESOURCE: owner student + lecturers + jr. lecturers + admins can edit
+  // Other resources: only admins can edit
   // ========================================================================
   server.put('/api/v1/resources/:id', {
-    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+    preHandler: [authMiddleware],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const updates = request.body as Record<string, unknown>;
+    const user = request.user!;
 
     delete updates.id;
     delete updates.created_at;
     delete updates.created_by;
 
-    // Verify resource belongs to user's tenant
+    // Fetch existing resource
     const { data: existing } = await supabase
       .from('resources')
-      .select('tenant_id')
+      .select('tenant_id, category, created_by')
       .eq('id', id)
       .single();
 
     if (!existing) throw ApiError.notFound('Resource');
-    if (request.user!.appRole !== 'main_admin' && existing.tenant_id !== request.user!.tenantId) {
-      throw ApiError.forbidden('This resource belongs to another faculty');
+
+    // Permission logic
+    if (existing.category === 'ST_RESOURCE') {
+      // ST Resource: owner student, lecturers, jr. lecturers, or admins can edit
+      const canEdit = user.sub === existing.created_by ||
+        ['main_admin', 'tenant_admin', 'lecturer', 'junior_lecturer'].includes(user.appRole);
+      if (!canEdit) throw ApiError.forbidden('You cannot edit this student resource');
+      // Students cannot change the category away from ST_RESOURCE
+      if (user.appRole === 'student') {
+        delete updates.category;
+        delete updates.resource_type;
+      }
+    } else {
+      // Regular resources: only admins
+      if (!['main_admin', 'tenant_admin'].includes(user.appRole)) {
+        throw ApiError.forbidden('Only admins can edit this resource');
+      }
+      if (user.appRole !== 'main_admin' && existing.tenant_id !== user.tenantId) {
+        throw ApiError.forbidden('This resource belongs to another faculty');
+      }
     }
 
     const { data, error } = await supabase
@@ -156,12 +192,34 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ========================================================================
-  // DELETE /api/v1/resources/:id — Retire a resource
+  // DELETE /api/v1/resources/:id — Delete a resource
+  // ST_RESOURCE: owner student + lecturers + jr. lecturers + admins
+  // Other resources: only admins
   // ========================================================================
   server.delete('/api/v1/resources/:id', {
-    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+    preHandler: [authMiddleware],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const user = request.user!;
+
+    // Fetch resource to check permissions
+    const { data: existing } = await supabase
+      .from('resources')
+      .select('category, created_by')
+      .eq('id', id)
+      .single();
+
+    if (!existing) throw ApiError.notFound('Resource');
+
+    if (existing.category === 'ST_RESOURCE') {
+      const canDelete = user.sub === existing.created_by ||
+        ['main_admin', 'tenant_admin', 'lecturer', 'junior_lecturer'].includes(user.appRole);
+      if (!canDelete) throw ApiError.forbidden('You cannot delete this student resource');
+    } else {
+      if (!['main_admin', 'tenant_admin'].includes(user.appRole)) {
+        throw ApiError.forbidden('Only admins can delete this resource');
+      }
+    }
 
     const { data, error } = await supabase
       .from('resources')

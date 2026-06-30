@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  ArrowLeft, Loader2, Monitor, MapPin, Users, DollarSign, FileText, Beaker, Presentation, Laptop, Wrench, Check, Building
+  ArrowLeft, Loader2, Monitor, MapPin, Users, DollarSign, FileText, Beaker, Presentation, Laptop, Wrench, Check, Building, BookOpen, Share2
 } from 'lucide-react';
 
 const resourceTypes = [
@@ -15,10 +15,15 @@ const resourceTypes = [
   { value: 'other', label: 'Other', icon: Wrench, color: 'var(--color-text-muted)', bg: 'var(--color-bg-glass)' },
 ];
 
+const stSuggestions = [
+  'Old Notebooks', 'Short Notes', 'Past Papers', 'Circuit Boards', 'Calculators',
+  'Lab Coats', 'Drawing Tools', 'Arduino Kits', 'Breadboards', 'Multimeters',
+  'Textbooks', 'Reference Books', 'USB Drives', 'Soldering Kits', 'Raspberry Pi',
+];
+
 export function NewResourcePage() {
   const [name, setName] = useState('');
   const [resourceType, setResourceType] = useState('');
-
   const [capacity, setCapacity] = useState('');
   const [location, setLocation] = useState('');
   const [equipmentFeatures, setEquipmentFeatures] = useState('');
@@ -29,6 +34,7 @@ export function NewResourcePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { claims } = useAuth();
+  const isStudent = claims?.app_role === 'student';
 
   useEffect(() => {
     if (claims?.app_role === 'main_admin') {
@@ -38,26 +44,39 @@ export function NewResourcePage() {
         }
       });
     }
+    // Auto-set type for students
+    if (isStudent) {
+      setResourceType('student_resource');
+    }
   }, [claims]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name || !resourceType) {
+    if (!name || (!isStudent && !resourceType)) {
       toast('warning', 'Name and resource type are required');
       return;
     }
 
     setLoading(true);
     
-    let computedCategory = 'HALL';
-    if (resourceType === 'lab') computedCategory = 'LAB';
-    else if (resourceType === 'equipment' || resourceType === 'other') computedCategory = 'EQUIPMENT';
+    let computedCategory: string;
+    let computedType: string;
+
+    if (isStudent) {
+      computedCategory = 'ST_RESOURCE';
+      computedType = 'student_resource';
+    } else {
+      computedType = resourceType;
+      if (resourceType === 'lab') computedCategory = 'LAB';
+      else if (resourceType === 'equipment' || resourceType === 'other') computedCategory = 'EQUIPMENT';
+      else computedCategory = 'HALL';
+    }
 
     const payload: any = {
       name,
-      resource_type: resourceType,
+      resource_type: computedType,
       category: computedCategory,
-      capacity: capacity ? parseInt(capacity) : undefined,
+      capacity: capacity ? parseInt(capacity) : 1,
       location: location || undefined,
       equipment_features: equipmentFeatures ? equipmentFeatures.split(',').map(s => s.trim()) : undefined,
       hourly_cost: hourlyCost ? parseFloat(hourlyCost) : undefined,
@@ -70,7 +89,7 @@ export function NewResourcePage() {
     const res = await api.post('/resources', payload);
 
     if (res.success) {
-      toast('success', 'Resource created successfully!');
+      toast('success', isStudent ? 'Your resource has been shared!' : 'Resource created successfully!');
       navigate('/resources');
     } else {
       toast('error', res.error?.message || 'Failed to create resource');
@@ -78,6 +97,106 @@ export function NewResourcePage() {
     setLoading(false);
   };
 
+  // ========== STUDENT MODE ==========
+  if (isStudent) {
+    return (
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <button className="btn btn-ghost" onClick={() => navigate('/resources')} style={{ marginBottom: 'var(--space-4)' }}>
+          <ArrowLeft size={18} /> Back to Resources
+        </button>
+
+        <div className="card" style={{ padding: 'var(--space-8)', borderTop: '4px solid #a855f7' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Share2 size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Share Your Resource</h2>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                List an item for other students to borrow
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', marginTop: 'var(--space-6)' }}>
+            {/* Suggested Items */}
+            <div>
+              <label className="input-label" style={{ marginBottom: 'var(--space-3)', display: 'block' }}>Quick Pick (or type your own below)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                {stSuggestions.map(s => (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setName(s)}
+                    className="btn"
+                    style={{
+                      fontSize: 'var(--font-size-xs)',
+                      padding: '6px 12px',
+                      borderRadius: 'var(--radius-full)',
+                      background: name === s ? '#a855f7' : '#f3e8ff',
+                      color: name === s ? 'white' : '#a855f7',
+                      border: 'none',
+                      fontWeight: 500,
+                      transition: 'all 200ms ease',
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Name */}
+            <div className="input-group">
+              <label className="input-label" htmlFor="st-name">Resource Name *</label>
+              <div style={{ position: 'relative' }}>
+                <BookOpen size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input id="st-name" className="input" placeholder="e.g., Data Structures Notebook" value={name} onChange={e => setName(e.target.value)} required style={{ paddingLeft: 40 }} />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="input-group">
+              <label className="input-label" htmlFor="st-location">Pickup Location</label>
+              <div style={{ position: 'relative' }}>
+                <MapPin size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input id="st-location" className="input" placeholder="e.g., Library, Block C lobby" value={location} onChange={e => setLocation(e.target.value)} style={{ paddingLeft: 40 }} />
+              </div>
+            </div>
+
+            {/* Description / Features */}
+            <div className="input-group">
+              <label className="input-label" htmlFor="st-features">Description / Condition</label>
+              <div style={{ position: 'relative' }}>
+                <FileText size={18} style={{ position: 'absolute', left: 12, top: 14, color: 'var(--color-text-muted)' }} />
+                <textarea id="st-features" className="input" placeholder="Describe condition, edition, or details (comma-separated tags)" value={equipmentFeatures} onChange={e => setEquipmentFeatures(e.target.value)} style={{ paddingLeft: 40, minHeight: 80 }} />
+              </div>
+            </div>
+
+            {/* Hourly Token Cost */}
+            <div className="input-group">
+              <label className="input-label" htmlFor="st-cost">Hourly Token Cost</label>
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)' }}>
+                How many tokens per hour should borrowers pay? (Leave empty for free)
+              </p>
+              <div style={{ position: 'relative' }}>
+                <DollarSign size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <input id="st-cost" className="input" type="number" step="1" min="0" placeholder="e.g., 5" value={hourlyCost} onChange={e => setHourlyCost(e.target.value)} style={{ paddingLeft: 40 }} />
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button className="btn btn-lg btn-full" type="submit" disabled={loading} style={{ marginTop: 'var(--space-2)', background: '#a855f7', color: 'white', border: 'none' }}>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Share2 size={18} />}
+              {loading ? 'Sharing...' : 'Share Resource'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== ADMIN MODE ==========
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <button className="btn btn-ghost" onClick={() => navigate('/resources')} style={{ marginBottom: 'var(--space-4)' }}>
@@ -152,7 +271,6 @@ export function NewResourcePage() {
               </div>
             </div>
           )}
-
 
           {/* Location & Capacity */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>

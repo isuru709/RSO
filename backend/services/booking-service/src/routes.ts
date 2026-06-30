@@ -135,9 +135,9 @@ export async function bookingRoutes(server: FastifyInstance): Promise<void> {
     if (!resource.is_bookable) throw ApiError.badRequest('This resource is not bookable');
     if (resource.status !== 'available') throw ApiError.badRequest(`Resource is currently ${resource.status}`);
 
-    // Student restriction
-    if (user.appRole === 'student' && resource.category !== 'EQUIPMENT') {
-      throw ApiError.forbidden('Students are only allowed to book EQUIPMENT resources.');
+    // Student restriction — can only book EQUIPMENT and ST_RESOURCE
+    if (user.appRole === 'student' && resource.category !== 'EQUIPMENT' && resource.category !== 'ST_RESOURCE') {
+      throw ApiError.forbidden('Students are only allowed to book EQUIPMENT and Student Shared resources.');
     }
 
     // Define priority weights

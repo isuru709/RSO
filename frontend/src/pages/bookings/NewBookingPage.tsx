@@ -58,7 +58,7 @@ export function NewBookingPage() {
   }, []);
 
   const selectedResource = resources.find(r => r.id === resourceId);
-  const filteredResources = isStudent ? resources.filter(r => r.category === 'EQUIPMENT') : resources;
+  const filteredResources = isStudent ? resources.filter(r => r.category === 'EQUIPMENT' || r.category === 'ST_RESOURCE') : resources;
 
   // Calculate token cost
   const calculateTokenCost = () => {
@@ -184,7 +184,7 @@ export function NewBookingPage() {
               {isStudent && (
                 <div style={{ padding: 'var(--space-3)', background: 'var(--color-warning-light)', color: '#b45309', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
                   <Coins size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                  As a student, you can only book EQUIPMENT resources. Tokens are deducted based on hourly rate × duration.
+                  As a student, you can book EQUIPMENT and Student Shared (ST) resources. Tokens are deducted based on hourly rate × duration.
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
