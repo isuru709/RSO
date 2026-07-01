@@ -78,20 +78,21 @@ export function DashboardPage() {
   const statCards = [
     { label: 'Total Resources', value: stats.totalResources, icon: Monitor, color: 'var(--color-primary)', bg: 'var(--color-primary-light)' },
     { label: 'Active Bookings', value: stats.activeBookings, icon: CalendarDays, color: 'var(--color-success)', bg: 'var(--color-success-light)' },
-    ...(isStudent && tokenBalance !== null ? [{
-      label: `Token Balance (${monthlyQuota}/month)`,
-      value: tokenBalance,
+    { label: 'Pending Approvals', value: stats.pendingApprovals, icon: Clock, color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
+    ...(isStudent ? [{
+      label: `Token Balance (${monthlyQuota ?? 100}/month)`,
+      value: tokenBalance ?? '...',
       icon: Coins,
-      color: tokenBalance > 20 ? 'var(--color-primary)' : 'var(--color-danger)',
-      bg: tokenBalance > 20 ? 'var(--color-primary-light)' : 'var(--color-danger-light)',
+      color: (tokenBalance ?? 100) > 20 ? 'var(--color-primary)' : 'var(--color-danger)',
+      bg: (tokenBalance ?? 100) > 20 ? 'var(--color-primary-light)' : 'var(--color-danger-light)',
     }] : [{
-      label: 'Pending Approvals',
-      value: stats.pendingApprovals,
-      icon: Clock,
-      color: 'var(--color-warning)',
-      bg: 'var(--color-warning-light)',
+      label: 'Your Role',
+      value: claims.app_role?.replace('_', ' ') || 'member',
+      icon: Users,
+      color: 'var(--color-info)',
+      bg: 'var(--color-info-light)',
+      isText: true,
     }]),
-    { label: 'Your Role', value: claims.app_role?.replace('_', ' ') || 'member', icon: Users, color: 'var(--color-info)', bg: 'var(--color-info-light)', isText: true },
   ];
 
   const statusBadge = (status: string) => {

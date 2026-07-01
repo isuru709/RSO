@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Monitor, CalendarDays, Bell, User } from 'lucide-react';
+import { LayoutDashboard, Monitor, CalendarDays, BookOpen, User } from 'lucide-react';
 
 export function BottomNav() {
   return (
@@ -12,13 +12,13 @@ export function BottomNav() {
         <Monitor size={20} />
         <span>Resources</span>
       </NavLink>
+      <NavLink to="/st-resources" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        <BookOpen size={20} />
+        <span>ST Share</span>
+      </NavLink>
       <NavLink to="/bookings" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
         <CalendarDays size={20} />
         <span>Bookings</span>
-      </NavLink>
-      <NavLink to="/notifications" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-        <Bell size={20} />
-        <span>Alerts</span>
       </NavLink>
       <NavLink to="/profile" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
         <User size={20} />

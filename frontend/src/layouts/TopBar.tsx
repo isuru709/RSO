@@ -1,31 +1,20 @@
-import { useLocation, useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Bell, Moon, Sun, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Moon, Sun, LogOut, ChevronDown, Coins } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 
-const pageTitles: Record<string, string> = {
-  '/': 'Dashboard',
-  '/resources': 'Resources',
-  '/bookings': 'Bookings',
-  '/notifications': 'Notifications',
-  '/profile': 'Profile',
-  '/admin/users': 'User Management',
-  '/admin/tenants': 'Tenant Management',
-};
-
 export function TopBar() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, claims, logout } = useAuth();
   const { toast } = useToast();
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [unread, setUnread] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const title = pageTitles[location.pathname] || 'CampusRSO';
+  const isStudent = claims?.app_role === 'student';
 
   useEffect(() => {
     const stored = localStorage.getItem('theme') as 'dark' | 'light' | null;
@@ -57,6 +46,21 @@ export function TopBar() {
     };
   }, []);
 
+  // Fetch token balance for students
+  useEffect(() => {
+    if (!isStudent) return;
+    const fetchTokens = () => {
+      api.get<any>('/users/me/tokens').then(res => {
+        if (res.success && res.data?.balance) {
+          setTokenBalance(res.data.balance.balance);
+        }
+      }).catch(() => {});
+    };
+    fetchTokens();
+    const interval = setInterval(fetchTokens, 60000);
+    return () => clearInterval(interval);
+  }, [isStudent]);
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -86,10 +90,17 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <h1 className="topbar-title">{title}</h1>
       <div className="topbar-spacer" />
 
       <div className="topbar-actions">
+        {/* Token Balance for students */}
+        {isStudent && (
+          <div className="token-pill" title="Your token balance">
+            <Coins size={14} />
+            <span>{tokenBalance ?? '...'}</span>
+          </div>
+        )}
+
         <button className="btn-icon btn-ghost" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>

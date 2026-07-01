@@ -124,6 +124,20 @@
   padding: var(--space-4) var(--space-3) var(--space-2);
 }
 
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-bg-glass);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.tabs::-webkit-scrollbar { display: none; }
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -202,6 +216,25 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+/* ── Token Pill (Header) ─────────────────────────────────── */
+.token-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1));
+  color: #a855f7;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  white-space: nowrap;
+}
+
+[data-theme="light"] .token-pill {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(139, 92, 246, 0.06));
 }
 
 /* ── Notification Bell ────────────────────────────────────── */

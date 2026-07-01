@@ -14,6 +14,37 @@ import {
   logger,
 } from '@rso/shared';
 
+// Helper: Send in-app notification for ST borrow events
+async function notifySTBorrow(
+  supabase: any,
+  recipientUid: string,
+  title: string,
+  body: string,
+  type: string,
+  payload: Record<string, unknown> = {},
+) {
+  try {
+    // notifications table requires tenant_id — look it up from user's profile
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tenant_id')
+      .eq('firebase_uid', recipientUid)
+      .single();
+    if (!profile?.tenant_id) return;
+
+    await supabase.from('notifications').insert({
+      tenant_id: profile.tenant_id,
+      recipient: recipientUid,
+      type,
+      title,
+      body,
+      payload,
+    });
+  } catch (err) {
+    logger.warn({ err, recipientUid, type }, 'Failed to send ST borrow notification');
+  }
+}
+
 export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
   const supabase = getSupabaseClient();
 
@@ -107,6 +138,24 @@ export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
       .select('full_name, email, phone, member_id')
       .eq('firebase_uid', resource.created_by)
       .single();
+
+    // Fetch borrower name for notification
+    const { data: borrowerProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('firebase_uid', user.sub)
+      .single();
+    const borrowerName = borrowerProfile?.full_name || 'A student';
+
+    // Notify owner about new borrow request
+    await notifySTBorrow(
+      supabase,
+      resource.created_by,
+      'New Borrow Request 📬',
+      `${borrowerName} wants to borrow your "${resource.name}". Check ST Borrows to approve or reject.`,
+      'st_borrow_created',
+      { st_booking_id: booking.id, resource_name: resource.name, borrower_name: borrowerName },
+    );
 
     logger.info({ stBookingId: booking.id, resource: id, borrower: user.sub }, 'ST Resource borrowed');
     sendSuccess(reply, {
@@ -224,6 +273,15 @@ export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
 
     if (error || !data) throw ApiError.notFound('Pending borrow request');
 
+    // Notify borrower
+    await notifySTBorrow(
+      supabase, data.borrower_uid,
+      'Borrow Approved ✅',
+      `Your borrow request for "${data.title.replace('Borrow: ', '')}" has been approved! Contact the owner for pickup.`,
+      'st_borrow_approved',
+      { st_booking_id: borrowId },
+    );
+
     logger.info({ stBookingId: borrowId }, 'ST borrow approved');
     sendSuccess(reply, data);
   });
@@ -252,6 +310,16 @@ export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
     // Refund tokens fully on rejection
     await refundTokens(supabase, data.borrower_uid, borrowId, 1.0);
 
+    // Notify borrower
+    const reasonNote = reason ? ` Reason: ${reason}` : '';
+    await notifySTBorrow(
+      supabase, data.borrower_uid,
+      'Borrow Rejected ❌',
+      `Your borrow request for "${data.title.replace('Borrow: ', '')}" was rejected.${reasonNote}`,
+      'st_borrow_rejected',
+      { st_booking_id: borrowId },
+    );
+
     logger.info({ stBookingId: borrowId }, 'ST borrow rejected');
     sendSuccess(reply, data);
   });
@@ -279,6 +347,15 @@ export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
     // 50% refund on cancellation
     await refundTokens(supabase, user.sub, borrowId, 0.5);
 
+    // Notify owner
+    await notifySTBorrow(
+      supabase, data.owner_uid,
+      'Borrow Cancelled',
+      `A borrow request for your item "${data.title.replace('Borrow: ', '')}" was cancelled by the borrower.`,
+      'st_borrow_cancelled',
+      { st_booking_id: borrowId },
+    );
+
     logger.info({ stBookingId: borrowId }, 'ST borrow cancelled');
     sendSuccess(reply, data);
   });
@@ -302,6 +379,15 @@ export async function stBookingRoutes(server: FastifyInstance): Promise<void> {
       .single();
 
     if (error || !data) throw ApiError.notFound('Approved borrow to return');
+
+    // Notify borrower
+    await notifySTBorrow(
+      supabase, data.borrower_uid,
+      'Item Returned 🔄',
+      `Your borrowed item "${data.title.replace('Borrow: ', '')}" has been marked as returned.`,
+      'st_borrow_returned',
+      { st_booking_id: borrowId },
+    );
 
     logger.info({ stBookingId: borrowId }, 'ST borrow returned');
     sendSuccess(reply, data);
