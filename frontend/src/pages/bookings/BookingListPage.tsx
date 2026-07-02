@@ -125,8 +125,8 @@ export function BookingListPage() {
             const sc = statusConfig[b.status] || statusConfig.pending;
             return (
               <div key={b.id} className="card card-interactive" style={{ padding: 'var(--space-4) var(--space-5)', cursor: 'pointer' }} onClick={() => navigate(`/bookings/${b.id}`)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-1)' }}>
                       <span style={{ fontWeight: 600 }}>{b.title}</span>
                       <span className={`badge ${sc.class}`}>{sc.label}</span>

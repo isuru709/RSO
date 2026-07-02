@@ -111,28 +111,28 @@ export function AdminUsersPage() {
       </div>
 
       {/* User Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="table-wrapper">
+        <table className="table">
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--color-border)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left' }}>User</th>
-              <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left' }}>Member ID</th>
-              <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left' }}>Role</th>
-              <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left' }}>Joined</th>
-              <th style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>Actions</th>
+            <tr>
+              <th>User</th>
+              <th className="mobile-hide">Member ID</th>
+              <th>Role</th>
+              <th className="mobile-hide">Joined</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   <Users size={32} style={{ margin: '0 auto var(--space-2)', opacity: 0.3 }} />
                   <p>No users found</p>
                 </td>
               </tr>
             ) : filtered.map(user => (
-              <tr key={user.firebase_uid} style={{ borderBottom: '1px solid var(--color-border)', opacity: user.is_active ? 1 : 0.5 }}>
-                <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+              <tr key={user.firebase_uid} style={{ opacity: user.is_active ? 1 : 0.5 }}>
+                <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: '50%',
@@ -150,12 +150,12 @@ export function AdminUsersPage() {
                     </div>
                   </div>
                 </td>
-                <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <td className="mobile-hide">
                   <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, fontFamily: 'monospace' }}>
                     {(user as any).member_id || '—'}
                   </span>
                 </td>
-                <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <td>
                   <button
                     className={`badge ${roleBadge[user.role] || 'badge-neutral'}`}
                     style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 'var(--space-1) var(--space-2)' }}
@@ -165,12 +165,12 @@ export function AdminUsersPage() {
                     {roleLabels[user.role] || user.role}
                   </button>
                 </td>
-                <td style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                <td className="mobile-hide">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Calendar size={12} /> {format(new Date(user.created_at), 'MMM d, yyyy')}
                   </div>
                 </td>
-                <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
+                <td style={{ textAlign: 'right' }}>
                   <button
                     className="btn btn-sm btn-danger"
                     onClick={() => handleDelete(user.firebase_uid, user.full_name || user.email)}
@@ -404,7 +404,7 @@ function RegisterUserModal({ onClose, onCreated }: { onClose: () => void; onCrea
             <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" required minLength={6} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="grid-2-col">
             <div className="input-group">
               <label className="input-label">Member ID</label>
               <input className="input" type="text" value={memberId} onChange={e => setMemberId(e.target.value.toUpperCase())} placeholder="230571F" />

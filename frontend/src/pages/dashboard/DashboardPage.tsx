@@ -174,9 +174,9 @@ export function DashboardPage() {
                 <thead>
                   <tr>
                     <th>Title</th>
-                    <th>Resource</th>
+                    <th className="mobile-hide">Resource</th>
                     <th>Date</th>
-                    <th>Time</th>
+                    <th className="mobile-hide">Time</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -184,9 +184,9 @@ export function DashboardPage() {
                   {recentBookings.map(b => (
                     <tr key={b.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/bookings/${b.id}`)}>
                       <td style={{ fontWeight: 600 }}>{b.title}</td>
-                      <td style={{ color: 'var(--color-text-secondary)' }}>{b.resource?.name || b.resources?.name || '—'}</td>
+                      <td className="mobile-hide" style={{ color: 'var(--color-text-secondary)' }}>{b.resource?.name || b.resources?.name || '—'}</td>
                       <td>{format(new Date(b.start_time), 'MMM d, yyyy')}</td>
-                      <td>{format(new Date(b.start_time), 'h:mm a')} – {format(new Date(b.end_time), 'h:mm a')}</td>
+                      <td className="mobile-hide">{format(new Date(b.start_time), 'h:mm a')} – {format(new Date(b.end_time), 'h:mm a')}</td>
                       <td>{statusBadge(b.status)}</td>
                     </tr>
                   ))}
@@ -200,7 +200,7 @@ export function DashboardPage() {
           <div className="card-header">
             <h3 className="card-title">Quick Actions</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
             <button className="card card-interactive" style={{ padding: 'var(--space-5)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/resources')}>
               <Monitor size={24} style={{ color: 'var(--color-primary)', marginBottom: 8 }} />
               <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>Browse Resources</div>

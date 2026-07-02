@@ -249,8 +249,8 @@ textarea.input { resize: vertical; min-height: 100px; }
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   animation: slideInRight var(--transition-spring) forwards;
-  min-width: 320px;
-  max-width: 420px;
+  min-width: min(320px, calc(100vw - 2rem));
+  max-width: min(420px, calc(100vw - 2rem));
 }
 
 .toast-success { border-left: 3px solid var(--color-success); }
@@ -361,4 +361,75 @@ textarea.input { resize: vertical; min-height: 100px; }
   flex-direction: column;
   gap: var(--space-4);
   color: var(--color-text-muted);
+}
+
+/* ── Modal Overlay / Content Aliases ──────────────────────── */
+/* Some pages use .modal-overlay/.modal-content instead of .modal-backdrop/.modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg-overlay);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn var(--transition-fast) forwards;
+  padding: var(--space-4);
+}
+
+.modal-content {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  z-index: var(--z-modal);
+  width: min(90vw, 520px);
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: scaleIn var(--transition-spring) forwards;
+  box-shadow: var(--shadow-xl);
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: var(--space-4);
+    width: calc(100vw - 2rem);
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* ── Responsive Table Utilities ───────────────────────────── */
+@media (max-width: 640px) {
+  .mobile-hide { display: none !important; }
+}
+
+/* ── Responsive Grid Utilities ────────────────────────────── */
+.grid-2-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 480px) {
+  .grid-2-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Mobile Button Group ──────────────────────────────────── */
+.btn-group-responsive {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .btn-group-responsive {
+    width: 100%;
+  }
+  .btn-group-responsive > .btn {
+    flex: 1;
+    min-width: 0;
+  }
 }

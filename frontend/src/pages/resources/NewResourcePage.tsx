@@ -273,7 +273,7 @@ export function NewResourcePage() {
           )}
 
           {/* Location & Capacity */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div className="grid-2-col">
             <div className="input-group">
               <label className="input-label" htmlFor="res-location">Location</label>
               <div style={{ position: 'relative' }}>

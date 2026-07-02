@@ -153,7 +153,7 @@ export function STBorrowsPage() {
                     <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                       {b.contact_role === 'owner' ? '📤 Owner Contact' : '📥 Borrower Contact'}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
+                    <div className="grid-2-col" style={{ fontSize: 'var(--font-size-sm)' }}>
                       {b.contact.full_name && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                           <User size={14} style={{ color: 'var(--color-text-muted)' }} />

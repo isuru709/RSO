@@ -134,7 +134,7 @@ export function AdminTenantsPage() {
           <h3 className="card-title" style={{ marginBottom: 'var(--space-4)' }}>
             {editingId ? 'Edit Tenant' : 'Create New Tenant'}
           </h3>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 'var(--space-4)' }}>
             <div className="input-group">
               <label className="input-label">Name *</label>
               <input className="input" placeholder="Faculty of Computing" value={formName} onChange={e => setFormName(e.target.value)} required />

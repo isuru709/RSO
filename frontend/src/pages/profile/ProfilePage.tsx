@@ -226,7 +226,7 @@ export function ProfilePage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            <div className="grid-2-col">
               <div className="input-group">
                 <label className="input-label">Member ID</label>
                 <div style={{ position: 'relative' }}>
@@ -255,7 +255,7 @@ export function ProfilePage() {
             </div>
           </form>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 'var(--space-4)' }}>
             <DetailItem icon={<Mail size={16} />} label="Email" value={profile?.email || '—'} />
             <DetailItem icon={<User size={16} />} label="Full Name" value={profile?.full_name || '—'} />
             <DetailItem icon={<Hash size={16} />} label="Member ID" value={profile?.member_id || '—'} />
@@ -275,7 +275,7 @@ export function ProfilePage() {
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
         {showDeleteConfirm ? (
-          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-danger)' }}>
               Are you sure? This is irreversible.
             </span>

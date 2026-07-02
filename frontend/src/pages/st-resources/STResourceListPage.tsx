@@ -113,7 +113,7 @@ export function STResourceListPage() {
           </h2>
           <p className="page-subtitle">{resources.length} student shared items</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
           {isStudent && (
             <>
               <button className="btn" onClick={() => navigate('/st-resources/borrows')} style={{ background: '#f3e8ff', color: '#a855f7', border: 'none' }}>
@@ -164,11 +164,11 @@ export function STResourceListPage() {
                 className="card card-interactive"
                 style={{ cursor: 'default', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <BookOpen size={22} />
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {isOwner && (
                       <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>My Item</span>
                     )}

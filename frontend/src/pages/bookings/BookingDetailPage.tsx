@@ -58,7 +58,7 @@ export function BookingDetailPage() {
         <ArrowLeft size={18} /> Back
       </button>
       <div className="card" style={{ padding: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>{booking.title}</h2>
           {isAdmin && (
             <button className="btn btn-outline btn-sm" onClick={() => setShowEdit(true)}>
@@ -66,7 +66,7 @@ export function BookingDetailPage() {
             </button>
           )}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+        <div className="grid-2-col" style={{ marginBottom: 'var(--space-6)' }}>
           <div>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: 4 }}>Resource</p>
             <p style={{ fontWeight: 600, fontSize: 'var(--font-size-lg)' }}>{resourceName}</p>
@@ -76,7 +76,7 @@ export function BookingDetailPage() {
             <span className="badge badge-info">{booking.status}</span>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+        <div className="grid-2-col" style={{ marginBottom: 'var(--space-6)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
             <CalendarDays size={20} style={{ color: 'var(--color-text-muted)' }} />
             <div>
@@ -102,7 +102,7 @@ export function BookingDetailPage() {
         {isAdmin && booking.user && (
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
             <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Booked By</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            <div className="grid-2-col">
               <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                 <User size={16} style={{ color: 'var(--color-text-muted)' }} />
                 <span>{booking.user.full_name || 'Unknown'}</span>
@@ -142,7 +142,7 @@ export function BookingDetailPage() {
                 <label className="label">Title</label>
                 <input className="input" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} required />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="grid-2-col">
                 <div>
                   <label className="label">Start Time</label>
                   <input type="datetime-local" className="input" value={editForm.start_time} onChange={e => setEditForm({...editForm, start_time: e.target.value})} required />

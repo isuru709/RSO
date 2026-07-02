@@ -98,7 +98,7 @@ export function BorrowSTResourceModal({ resource, tokenBalance, onClose, onSucce
           )}
 
           {/* Dates */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="grid-2-col">
             <div className="input-group">
               <label className="input-label">Start Date</label>
               <input className="input" type="date" value={startDate} onChange={e => {
@@ -113,7 +113,7 @@ export function BorrowSTResourceModal({ resource, tokenBalance, onClose, onSucce
           </div>
 
           {/* Times */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="grid-2-col">
             <div className="input-group">
               <label className="input-label">Start Time</label>
               <input className="input" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required />

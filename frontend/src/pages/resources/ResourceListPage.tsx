@@ -157,11 +157,11 @@ export function ResourceListPage() {
                 style={{ cursor: 'pointer', borderLeft: r.category === 'ST_RESOURCE' ? '3px solid #a855f7' : undefined }}
                 onClick={() => navigate(`/resources/${r.id}`)}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-4)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                   <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={24} />
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {r.category === 'ST_RESOURCE' && (
                       <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600 }}>
                         {isOwner ? 'My ST' : 'ST'}

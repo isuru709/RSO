@@ -183,7 +183,7 @@ export function EditResourcePage() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div className="grid-2-col">
             <div className="input-group">
               <label className="input-label" htmlFor="res-location">Location</label>
               <input id="res-location" className="input" placeholder="Room 201" value={location} onChange={e => setLocation(e.target.value)} />

@@ -239,7 +239,7 @@ export function NewBookingPage() {
               )}
 
               {/* Start Date & End Date */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="grid-2-col">
                 <div className="input-group">
                   <label className="input-label">Start Date</label>
                   <input className="input" type="date" value={startDate} onChange={e => {
@@ -255,7 +255,7 @@ export function NewBookingPage() {
               </div>
 
               {/* Start Time & End Time */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="grid-2-col">
                 <div className="input-group">
                   <label className="input-label">Start Time</label>
                   <input className="input" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required />
