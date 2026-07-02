@@ -81,7 +81,20 @@ export async function authMiddleware(
       email: decoded.email,
       tenantId: decoded.tenant_id || null,
       appRole: (decoded.app_role as AppRole) || 'student',
+      isBanned: decoded.is_banned === true,
     };
+
+    // Block banned users
+    if (request.user.isBanned) {
+      reply.code(403).send({
+        success: false,
+        error: {
+          code: 'ACCOUNT_SUSPENDED',
+          message: 'Your account has been temporarily suspended. Please contact your administrator.',
+        },
+      });
+      return;
+    }
 
     logger.debug(
       { uid: decoded.uid, tenantId: request.user.tenantId, role: request.user.appRole },

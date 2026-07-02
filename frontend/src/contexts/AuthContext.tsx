@@ -16,6 +16,7 @@ interface Claims {
   role?: string;
   app_role?: string;
   tenant_id?: string;
+  is_banned?: boolean;
 }
 
 interface AuthContextType {
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: tokenResult.claims.role as string,
             app_role: tokenResult.claims.app_role as string,
             tenant_id: tokenResult.claims.tenant_id as string,
+            is_banned: tokenResult.claims.is_banned === true,
           });
         } catch {
           setClaims({});
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: tokenResult.claims.role as string,
       app_role: tokenResult.claims.app_role as string,
       tenant_id: tokenResult.claims.tenant_id as string,
+      is_banned: tokenResult.claims.is_banned === true,
     });
   };
 

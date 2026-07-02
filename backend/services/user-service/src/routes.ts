@@ -10,6 +10,7 @@ import {
   authMiddleware,
   requireRole,
   getSupabaseClient,
+  getRedisClient,
   ApiError,
   sendSuccess,
   sendPaginated,
@@ -44,6 +45,122 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     }
     
     sendSuccess(reply, { valid: true, tenant_name: tenant.name });
+  });
+
+  // ========================================================================
+  // POST /api/v1/users/send-verification — Send OTP to email before signup
+  // ========================================================================
+  server.post('/api/v1/users/send-verification', async (request, reply) => {
+    const { email } = request.body as { email: string };
+
+    if (!email || !email.includes('@')) {
+      throw ApiError.badRequest('A valid email address is required');
+    }
+
+    // Check if email is already registered
+    const { data: existing } = await supabase
+      .from('user_profiles')
+      .select('firebase_uid')
+      .eq('email', email)
+      .single();
+
+    if (existing) {
+      throw ApiError.conflict('An account with this email already exists');
+    }
+
+    const redis = getRedisClient();
+    const rateLimitKey = `email-verify-rate:${email}`;
+    const otpKey = `email-verify:${email}`;
+
+    // Rate limit: max 5 sends per 10 minutes
+    const sendCount = await redis.incr(rateLimitKey);
+    if (sendCount === 1) {
+      await redis.expire(rateLimitKey, 600); // 10 min window
+    }
+    if (sendCount > 5) {
+      throw ApiError.tooManyRequests('Too many verification attempts. Please wait 10 minutes.');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store in Redis with 10 min TTL
+    await redis.set(otpKey, otp, 'EX', 600);
+
+    // Send email via Resend
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.NOTIFICATION_FROM_EMAIL || 'onboarding@resend.dev';
+
+    if (apiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            from,
+            to: email,
+            subject: 'CampusRSO — Email Verification Code',
+            html: `
+              <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="color: #6366f1; margin: 0;">CampusRSO</h1>
+                  <p style="color: #6b7280; margin-top: 4px;">Campus Resource Sharing Platform</p>
+                </div>
+                <div style="background: #f9fafb; border-radius: 12px; padding: 32px; text-align: center;">
+                  <p style="color: #374151; font-size: 16px; margin-bottom: 16px;">Your verification code is:</p>
+                  <div style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #6366f1; background: white; border-radius: 8px; padding: 16px; border: 2px dashed #c7d2fe;">
+                    ${otp}
+                  </div>
+                  <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">This code expires in 10 minutes.</p>
+                </div>
+                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 24px;">If you didn't request this, please ignore this email.</p>
+              </div>
+            `,
+          }),
+        });
+        logger.info({ email }, 'Verification OTP sent');
+      } catch (err) {
+        logger.error({ err, email }, 'Failed to send verification email');
+        throw ApiError.internal('Failed to send verification email. Please try again.');
+      }
+    } else {
+      logger.warn({ email, otp }, 'RESEND_API_KEY not set — OTP logged for dev');
+    }
+
+    sendSuccess(reply, { message: 'Verification code sent to your email', email });
+  });
+
+  // ========================================================================
+  // POST /api/v1/users/verify-email — Validate OTP before signup
+  // ========================================================================
+  server.post('/api/v1/users/verify-email', async (request, reply) => {
+    const { email, code } = request.body as { email: string; code: string };
+
+    if (!email || !code) {
+      throw ApiError.badRequest('Email and verification code are required');
+    }
+
+    const redis = getRedisClient();
+    const otpKey = `email-verify:${email}`;
+    const storedOtp = await redis.get(otpKey);
+
+    if (!storedOtp) {
+      throw ApiError.badRequest('Verification code has expired. Please request a new one.');
+    }
+
+    if (storedOtp !== code.trim()) {
+      throw ApiError.badRequest('Invalid verification code. Please try again.');
+    }
+
+    // OTP is valid — mark as verified in Redis (for signup to check)
+    await redis.set(`email-verified:${email}`, 'true', 'EX', 1800); // 30 min to complete signup
+    await redis.del(otpKey); // Remove used OTP
+
+    logger.info({ email }, 'Email verified via OTP');
+    sendSuccess(reply, { verified: true, message: 'Email verified successfully' });
   });
 
   // ========================================================================
@@ -422,6 +539,90 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
       claims_updated: true,
       message: 'Role updated. User must call getIdToken(true) to refresh.',
     });
+  });
+
+  // ========================================================================
+  // PUT /api/v1/users/:uid/ban — Main admin bans a user temporarily
+  // ========================================================================
+  server.put('/api/v1/users/:uid/ban', {
+    preHandler: [authMiddleware, requireRole('main_admin')],
+  }, async (request, reply) => {
+    const { uid } = request.params as { uid: string };
+    const { reason } = request.body as { reason?: string };
+
+    // Can't ban yourself
+    if (uid === request.user!.sub) {
+      throw ApiError.badRequest('You cannot ban yourself');
+    }
+
+    // Can't ban other main_admins
+    const { data: targetUser } = await supabase
+      .from('user_profiles')
+      .select('role, full_name')
+      .eq('firebase_uid', uid)
+      .single();
+
+    if (!targetUser) throw ApiError.notFound('User');
+    if (targetUser.role === 'main_admin') {
+      throw ApiError.forbidden('Cannot ban another main admin');
+    }
+
+    // Update is_active in database
+    await supabase
+      .from('user_profiles')
+      .update({ is_active: false })
+      .eq('firebase_uid', uid);
+
+    // Set is_banned claim in Firebase
+    const { getAuth } = await import('firebase-admin/auth');
+    try {
+      const currentClaims = (await getAuth().getUser(uid)).customClaims || {};
+      await getAuth().setCustomUserClaims(uid, {
+        ...currentClaims,
+        is_banned: true,
+        ban_reason: reason || 'Suspended by administrator',
+      });
+      // Revoke refresh tokens to force re-auth
+      await getAuth().revokeRefreshTokens(uid);
+    } catch (err) {
+      logger.error({ err, uid }, 'Failed to set ban claims in Firebase');
+    }
+
+    logger.info({ uid, bannedBy: request.user!.sub, reason }, 'User banned');
+    sendSuccess(reply, { message: `User ${targetUser.full_name || uid} has been suspended` });
+  });
+
+  // ========================================================================
+  // PUT /api/v1/users/:uid/unban — Main admin unbans a user
+  // ========================================================================
+  server.put('/api/v1/users/:uid/unban', {
+    preHandler: [authMiddleware, requireRole('main_admin')],
+  }, async (request, reply) => {
+    const { uid } = request.params as { uid: string };
+
+    // Update is_active in database
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({ is_active: true })
+      .eq('firebase_uid', uid)
+      .select('full_name')
+      .single();
+
+    if (error || !data) throw ApiError.notFound('User');
+
+    // Remove is_banned claim in Firebase
+    const { getAuth } = await import('firebase-admin/auth');
+    try {
+      const currentClaims = (await getAuth().getUser(uid)).customClaims || {};
+      delete currentClaims.is_banned;
+      delete currentClaims.ban_reason;
+      await getAuth().setCustomUserClaims(uid, currentClaims);
+    } catch (err) {
+      logger.error({ err, uid }, 'Failed to remove ban claims in Firebase');
+    }
+
+    logger.info({ uid, unbannedBy: request.user!.sub }, 'User unbanned');
+    sendSuccess(reply, { message: `User ${data.full_name || uid} has been reactivated` });
   });
 
   // ========================================================================

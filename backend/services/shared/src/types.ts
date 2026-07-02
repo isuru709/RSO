@@ -12,6 +12,7 @@ export interface UserClaims {
   email?: string;
   tenantId: string | null;
   appRole: AppRole;
+  isBanned?: boolean;
 }
 
 // ============================================================================

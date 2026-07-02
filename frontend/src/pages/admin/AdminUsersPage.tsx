@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Users, Search, Mail, Calendar, Trash2, Plus, X, Loader2,
+  ShieldBan, ShieldCheck, Coins,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -42,7 +44,10 @@ export function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
+  const [tokenModalUser, setTokenModalUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
+  const { claims } = useAuth();
+  const isMainAdmin = claims.app_role === 'main_admin';
 
   const fetchUsers = () => {
     setLoading(true);
@@ -62,6 +67,27 @@ export function AdminUsersPage() {
       setUsers(prev => prev.filter(u => u.firebase_uid !== uid));
     } else {
       toast('error', res.error?.message || 'Failed to delete user');
+    }
+  };
+
+  const handleBan = async (uid: string, name: string) => {
+    if (!window.confirm(`Suspend user "${name}"? They will not be able to access the platform.`)) return;
+    const res = await api.put(`/users/${uid}/ban`, { reason: 'Suspended by administrator' });
+    if (res.success) {
+      toast('success', `${name} has been suspended`);
+      setUsers(prev => prev.map(u => u.firebase_uid === uid ? { ...u, is_active: false } : u));
+    } else {
+      toast('error', res.error?.message || 'Failed to suspend user');
+    }
+  };
+
+  const handleUnban = async (uid: string, name: string) => {
+    const res = await api.put(`/users/${uid}/unban`, {});
+    if (res.success) {
+      toast('success', `${name} has been reactivated`);
+      setUsers(prev => prev.map(u => u.firebase_uid === uid ? { ...u, is_active: true } : u));
+    } else {
+      toast('error', res.error?.message || 'Failed to reactivate user');
     }
   };
 
@@ -131,19 +157,25 @@ export function AdminUsersPage() {
                 </td>
               </tr>
             ) : filtered.map(user => (
-              <tr key={user.firebase_uid} style={{ opacity: user.is_active ? 1 : 0.5 }}>
+              <tr key={user.firebase_uid} style={{ opacity: user.is_active ? 1 : 0.6 }}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     <div style={{
                       width: 36, height: 36, borderRadius: '50%',
-                      background: 'var(--gradient-primary)', color: 'white',
+                      background: user.is_active ? 'var(--gradient-primary)' : 'linear-gradient(135deg, #fca5a5, #f87171)',
+                      color: 'white',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 'var(--font-size-sm)', fontWeight: 700,
                     }}>
                       {(user.full_name || user.email)[0].toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>{user.full_name || '—'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>{user.full_name || '—'}</span>
+                        {!user.is_active && (
+                          <span className="badge badge-danger" style={{ fontSize: 9, padding: '1px 6px' }}>Banned</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Mail size={10} /> {user.email}
                       </div>
@@ -171,13 +203,48 @@ export function AdminUsersPage() {
                   </div>
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(user.firebase_uid, user.full_name || user.email)}
-                    style={{ gap: 4 }}
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
+                  <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    {/* Token management for students */}
+                    {user.role === 'student' && (
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setTokenModalUser(user)}
+                        title="Manage tokens"
+                        style={{ gap: 4, color: 'var(--color-warning, #d97706)' }}
+                      >
+                        <Coins size={12} /> Tokens
+                      </button>
+                    )}
+                    {/* Ban/Unban for main admin */}
+                    {isMainAdmin && user.role !== 'main_admin' && (
+                      user.is_active ? (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => handleBan(user.firebase_uid, user.full_name || user.email)}
+                          title="Suspend user"
+                          style={{ gap: 4, color: 'var(--color-danger)' }}
+                        >
+                          <ShieldBan size={12} /> Ban
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => handleUnban(user.firebase_uid, user.full_name || user.email)}
+                          title="Reactivate user"
+                          style={{ gap: 4, color: 'var(--color-success, #16a34a)' }}
+                        >
+                          <ShieldCheck size={12} /> Unban
+                        </button>
+                      )
+                    )}
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(user.firebase_uid, user.full_name || user.email)}
+                      style={{ gap: 4 }}
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -199,6 +266,15 @@ export function AdminUsersPage() {
           user={roleModalUser}
           onClose={() => setRoleModalUser(null)}
           onChanged={() => { setRoleModalUser(null); fetchUsers(); }}
+        />
+      )}
+
+      {/* Token Management Modal */}
+      {tokenModalUser && (
+        <TokenManagementModal
+          user={tokenModalUser}
+          onClose={() => setTokenModalUser(null)}
+          onUpdated={() => { setTokenModalUser(null); fetchUsers(); }}
         />
       )}
     </div>
@@ -451,6 +527,165 @@ function RegisterUserModal({ onClose, onCreated }: { onClose: () => void; onCrea
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/* ========================================================================
+   Token Management Modal — Admin adjusts a specific student's tokens
+   ======================================================================== */
+function TokenManagementModal({ user, onClose, onUpdated }: { user: UserProfile; onClose: () => void; onUpdated: () => void }) {
+  const [balance, setBalance] = useState<number | ''>('');
+  const [monthlyQuota, setMonthlyQuota] = useState<number | ''>('');
+  const [loadingData, setLoadingData] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [currentQuota, setCurrentQuota] = useState(0);
+  const { toast } = useToast();
+
+  // Fetch current token data
+  useEffect(() => {
+    setLoadingData(true);
+    api.get<any>(`/users/${user.firebase_uid}/tokens`).then(res => {
+      // The endpoint returns { balance: {...}, transactions: [...] }
+      // But we need to handle cases where the user might not have a token record
+      if (res.success && res.data) {
+        const bal = res.data.balance || res.data;
+        setCurrentBalance(bal.balance ?? 0);
+        setCurrentQuota(bal.monthly_quota ?? 100);
+        setBalance(bal.balance ?? 0);
+        setMonthlyQuota(bal.monthly_quota ?? 100);
+      }
+    }).catch(() => {
+      // Fallback: try the admin endpoint
+      setBalance(0);
+      setMonthlyQuota(100);
+    }).finally(() => setLoadingData(false));
+  }, [user.firebase_uid]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (balance === '' && monthlyQuota === '') {
+      toast('warning', 'Enter at least one value to update');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload: Record<string, number> = {};
+      if (balance !== '' && balance !== currentBalance) payload.balance = Number(balance);
+      if (monthlyQuota !== '' && monthlyQuota !== currentQuota) payload.monthly_quota = Number(monthlyQuota);
+
+      if (Object.keys(payload).length === 0) {
+        toast('info', 'No changes to save');
+        onClose();
+        return;
+      }
+
+      const res = await api.put(`/users/${user.firebase_uid}/tokens`, payload);
+      if (res.success) {
+        toast('success', `Tokens updated for ${user.full_name || user.email}`);
+        onUpdated();
+      } else {
+        toast('error', res.error?.message || 'Failed to update tokens');
+      }
+    } catch {
+      toast('error', 'Failed to update tokens');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+    }} onClick={onClose}>
+      <div className="card" style={{
+        width: '100%', maxWidth: 420, padding: 'var(--space-6)',
+        animation: 'fadeInUp 0.2s ease',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Coins size={20} style={{ color: '#d97706' }} /> Manage Tokens
+          </h3>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        {/* User info */}
+        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontWeight: 600 }}>{user.full_name || user.email}</div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{user.email}</div>
+        </div>
+
+        {loadingData ? (
+          <div style={{ textAlign: 'center', padding: 'var(--space-6)' }}>
+            <Loader2 size={24} className="animate-spin" style={{ color: 'var(--color-text-muted)', margin: '0 auto' }} />
+          </div>
+        ) : (
+          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {/* Current stats */}
+            <div className="grid-2-col">
+              <div style={{
+                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: '#92400e' }}>{currentBalance}</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: '#92400e', fontWeight: 500 }}>Current Balance</div>
+              </div>
+              <div style={{
+                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: '#3730a3' }}>{currentQuota}</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', color: '#3730a3', fontWeight: 500 }}>Monthly Quota</div>
+              </div>
+            </div>
+
+            {/* Editable fields */}
+            <div className="input-group">
+              <label className="input-label">Set Token Balance</label>
+              <input
+                className="input"
+                type="number"
+                min={0}
+                value={balance}
+                onChange={e => setBalance(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="e.g. 100"
+              />
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                Current available tokens for this student
+              </span>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Set Monthly Quota</label>
+              <input
+                className="input"
+                type="number"
+                min={0}
+                value={monthlyQuota}
+                onChange={e => setMonthlyQuota(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="e.g. 100"
+              />
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                Tokens refreshed monthly for this student
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+              <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Coins size={16} />}
+                {saving ? 'Saving...' : 'Update Tokens'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

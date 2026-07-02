@@ -28,8 +28,46 @@ import './styles/animations.css';
 import './styles/components.css';
 import './styles/layout.css';
 
+function SuspendedScreen() {
+  const { logout } = useAuth();
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--color-bg)',
+      padding: 'var(--space-6)',
+    }}>
+      <div className="card" style={{
+        maxWidth: 440, width: '100%', padding: 'var(--space-8)',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #fecaca, #fca5a5)',
+          color: '#dc2626',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto var(--space-5)',
+          fontSize: 32,
+        }}>
+          🚫
+        </div>
+        <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+          Account Suspended
+        </h2>
+        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>
+          Your account has been temporarily suspended by an administrator.
+          Please contact your faculty admin for more information.
+        </p>
+        <button className="btn btn-outline btn-full" onClick={() => logout()}>
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, claims, loading } = useAuth();
 
   if (loading) {
     return (
@@ -41,6 +79,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  if (claims.is_banned) return <SuspendedScreen />;
   return <>{children}</>;
 }
 
