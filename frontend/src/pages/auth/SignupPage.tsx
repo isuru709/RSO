@@ -13,7 +13,6 @@ export function SignupPage() {
   const [tenantCode, setTenantCode] = useState('');
   const [memberId, setMemberId] = useState('');
   const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
 
   // OTP verification state
   const [step, setStep] = useState<'form' | 'verify'>('form');
