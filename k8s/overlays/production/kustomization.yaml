@@ -13,14 +13,14 @@ resources:
 
 images:
   - name: ghcr.io/isuru709/rso-frontend
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
   - name: ghcr.io/isuru709/rso-tenant-service
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
   - name: ghcr.io/isuru709/rso-user-service
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
   - name: ghcr.io/isuru709/rso-resource-service
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
   - name: ghcr.io/isuru709/rso-booking-service
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
   - name: ghcr.io/isuru709/rso-notification-service
-    newTag: latest
+    newTag: 69ba9720219b1900032a4111ecc84769a1f9c39e
