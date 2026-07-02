@@ -13,19 +13,6 @@ resources:
 
 images:
   - name: ghcr.io/isuru709/rso-frontend
-<<<<<<< Updated upstream
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-  - name: ghcr.io/isuru709/rso-tenant-service
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-  - name: ghcr.io/isuru709/rso-user-service
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-  - name: ghcr.io/isuru709/rso-resource-service
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-  - name: ghcr.io/isuru709/rso-booking-service
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-  - name: ghcr.io/isuru709/rso-notification-service
-    newTag: d74a8eafe8f3dd1ba26688bf879485a9f70dc5d1
-=======
     newTag: latest
   - name: ghcr.io/isuru709/rso-tenant-service
     newTag: latest
@@ -37,4 +24,3 @@ images:
     newTag: latest
   - name: ghcr.io/isuru709/rso-notification-service
     newTag: latest
->>>>>>> Stashed changes
