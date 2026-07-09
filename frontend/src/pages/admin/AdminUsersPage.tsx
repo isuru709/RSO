@@ -552,17 +552,18 @@ function TokenManagementModal({ user, onClose, onUpdated }: { user: UserProfile;
   useEffect(() => {
     setLoadingData(true);
     api.get<any>(`/users/${user.firebase_uid}/tokens`).then(res => {
-      // The endpoint returns { balance: {...}, transactions: [...] }
-      // But we need to handle cases where the user might not have a token record
       if (res.success && res.data) {
-        const bal = res.data.balance || res.data;
-        setCurrentBalance(bal.balance ?? 0);
-        setCurrentQuota(bal.monthly_quota ?? 100);
-        setBalance(bal.balance ?? 0);
-        setMonthlyQuota(bal.monthly_quota ?? 100);
+        // API response: { balance: { balance: N, monthly_quota: N, ... }, transactions: [...] }
+        const tokenData = res.data;
+        const bal = tokenData.balance || tokenData;
+        const b = typeof bal.balance === 'number' ? bal.balance : 0;
+        const q = typeof bal.monthly_quota === 'number' ? bal.monthly_quota : 100;
+        setCurrentBalance(b);
+        setCurrentQuota(q);
+        setBalance(b);
+        setMonthlyQuota(q);
       }
     }).catch(() => {
-      // Fallback: try the admin endpoint
       setBalance(0);
       setMonthlyQuota(100);
     }).finally(() => setLoadingData(false));
@@ -611,11 +612,12 @@ function TokenManagementModal({ user, onClose, onUpdated }: { user: UserProfile;
         width: '100%', maxWidth: 420, padding: 'var(--space-6)',
         animation: 'fadeInUp 0.2s ease',
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Coins size={20} style={{ color: '#d97706' }} /> Manage Tokens
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', gap: 'var(--space-2)' }}>
+          <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
+            <Coins size={18} style={{ color: '#d97706', flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Manage Tokens</span>
           </h3>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><X size={18} /></button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ flexShrink: 0 }}><X size={18} /></button>
         </div>
 
         {/* User info */}
@@ -631,22 +633,22 @@ function TokenManagementModal({ user, onClose, onUpdated }: { user: UserProfile;
         ) : (
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {/* Current stats */}
-            <div className="grid-2-col">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
               <div style={{
                 padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
                 background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: '#92400e' }}>{currentBalance}</div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: '#92400e', fontWeight: 500 }}>Current Balance</div>
+                <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: '#92400e' }}>{currentBalance}</div>
+                <div style={{ fontSize: '10px', color: '#92400e', fontWeight: 500 }}>Current Balance</div>
               </div>
               <div style={{
                 padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
                 background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: '#3730a3' }}>{currentQuota}</div>
-                <div style={{ fontSize: 'var(--font-size-xs)', color: '#3730a3', fontWeight: 500 }}>Monthly Quota</div>
+                <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: '#3730a3' }}>{currentQuota}</div>
+                <div style={{ fontSize: '10px', color: '#3730a3', fontWeight: 500 }}>Monthly Quota</div>
               </div>
             </div>
 
@@ -681,9 +683,9 @@ function TokenManagementModal({ user, onClose, onUpdated }: { user: UserProfile;
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>
+              <button type="submit" className="btn btn-primary" disabled={saving} style={{ minWidth: 0 }}>
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Coins size={16} />}
                 {saving ? 'Saving...' : 'Update Tokens'}
               </button>

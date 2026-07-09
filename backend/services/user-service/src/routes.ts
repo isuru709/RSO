@@ -873,6 +873,34 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ========================================================================
+  // GET /api/v1/users/:uid/tokens — Admin: get a specific student's tokens
+  // ========================================================================
+  server.get('/api/v1/users/:uid/tokens', {
+    preHandler: [authMiddleware, requireRole('tenant_admin', 'main_admin')],
+  }, async (request, reply) => {
+    const { uid } = request.params as { uid: string };
+
+    const { data: balance } = await supabase
+      .from('student_token_balances')
+      .select('*')
+      .eq('firebase_uid', uid)
+      .single();
+
+    if (!balance) {
+      return sendSuccess(reply, { balance: null, transactions: [] });
+    }
+
+    const { data: transactions } = await supabase
+      .from('token_transactions')
+      .select('*')
+      .eq('firebase_uid', uid)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    sendSuccess(reply, { balance, transactions: transactions || [] });
+  });
+
+  // ========================================================================
   // PUT /api/v1/users/:uid/tokens — Admin: adjust a specific student's tokens
   // ========================================================================
   server.put('/api/v1/users/:uid/tokens', {
