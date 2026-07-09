@@ -47,6 +47,150 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     
     sendSuccess(reply, { valid: true, tenant_name: tenant.name });
   });
+  // ========================================================================
+  // POST /api/v1/users/forgot-password — Send reset code to verified email
+  // ========================================================================
+  server.post('/api/v1/users/forgot-password', async (request, reply) => {
+    const { email, member_id } = request.body as { email: string; member_id: string };
+
+    if (!email || !email.includes('@')) {
+      throw ApiError.badRequest('A valid email address is required');
+    }
+    if (!member_id || !member_id.trim()) {
+      throw ApiError.badRequest('Member ID is required');
+    }
+
+    // Verify email + member_id combination exists
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('firebase_uid, email, full_name, member_id')
+      .eq('email', email.toLowerCase().trim())
+      .single();
+
+    if (!userProfile) {
+      // Don't reveal whether email exists — generic message
+      throw ApiError.badRequest('No account found with the provided email and ID combination');
+    }
+
+    // Verify member_id matches (case-insensitive)
+    if (!userProfile.member_id || userProfile.member_id.toLowerCase() !== member_id.trim().toLowerCase()) {
+      throw ApiError.badRequest('No account found with the provided email and ID combination');
+    }
+
+    const redis = getRedisClient();
+    const rateLimitKey = `pwd-reset-rate:${email}`;
+    const otpKey = `pwd-reset:${email}`;
+
+    // Rate limit: max 5 attempts per 15 minutes
+    const sendCount = await redis.incr(rateLimitKey);
+    if (sendCount === 1) {
+      await redis.expire(rateLimitKey, 900);
+    }
+    if (sendCount > 5) {
+      throw ApiError.tooManyRequests('Too many reset attempts. Please wait 15 minutes.');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store in Redis with 10 min TTL
+    await redis.set(otpKey, JSON.stringify({ otp, uid: userProfile.firebase_uid }), 'EX', 600);
+
+    // Send email via Resend
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.NOTIFICATION_FROM_EMAIL || 'onboarding@resend.dev';
+
+    if (apiKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            from,
+            to: email,
+            subject: 'CampusRSO — Password Reset Code',
+            html: `
+              <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="color: #6366f1; margin: 0;">CampusRSO</h1>
+                  <p style="color: #6b7280; margin-top: 4px;">Password Reset</p>
+                </div>
+                <div style="background: #f9fafb; border-radius: 12px; padding: 32px; text-align: center;">
+                  <p style="color: #374151; font-size: 16px; margin-bottom: 8px;">Hello ${userProfile.full_name || 'User'},</p>
+                  <p style="color: #6b7280; font-size: 14px; margin-bottom: 16px;">Your password reset code is:</p>
+                  <div style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #6366f1; background: white; border-radius: 8px; padding: 16px; border: 2px dashed #c7d2fe;">
+                    ${otp}
+                  </div>
+                  <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">This code expires in 10 minutes.</p>
+                </div>
+                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 24px;">If you didn't request a password reset, please ignore this email.</p>
+              </div>
+            `,
+          }),
+        });
+        logger.info({ email }, 'Password reset OTP sent');
+      } catch (err) {
+        logger.error({ err, email }, 'Failed to send password reset email');
+        throw ApiError.internal('Failed to send reset email. Please try again.');
+      }
+    } else {
+      logger.warn({ email, otp }, 'RESEND_API_KEY not set — OTP logged for dev');
+    }
+
+    sendSuccess(reply, { message: 'Reset code sent to your email', email });
+  });
+
+  // ========================================================================
+  // POST /api/v1/users/reset-password — Verify code and set new password
+  // ========================================================================
+  server.post('/api/v1/users/reset-password', async (request, reply) => {
+    const { email, code, new_password } = request.body as { email: string; code: string; new_password: string };
+
+    if (!email || !code || !new_password) {
+      throw ApiError.badRequest('Email, verification code, and new password are required');
+    }
+
+    if (new_password.length < 6) {
+      throw ApiError.badRequest('Password must be at least 6 characters long');
+    }
+
+    const redis = getRedisClient();
+    const otpKey = `pwd-reset:${email}`;
+    const storedData = await redis.get(otpKey);
+
+    if (!storedData) {
+      throw ApiError.badRequest('Reset code has expired. Please request a new one.');
+    }
+
+    let parsed: { otp: string; uid: string };
+    try {
+      parsed = JSON.parse(storedData);
+    } catch {
+      throw ApiError.badRequest('Invalid reset session. Please request a new code.');
+    }
+
+    if (parsed.otp !== code.trim()) {
+      throw ApiError.badRequest('Invalid reset code. Please try again.');
+    }
+
+    // Update password in Firebase Auth
+    try {
+      const { getAuth } = await import('firebase-admin/auth');
+      await getAuth().updateUser(parsed.uid, { password: new_password });
+    } catch (err: any) {
+      logger.error({ err, uid: parsed.uid }, 'Failed to reset password in Firebase');
+      throw ApiError.internal('Failed to reset password. Please try again.');
+    }
+
+    // Clean up Redis
+    await redis.del(otpKey);
+
+    logger.info({ email, uid: parsed.uid }, 'Password reset successfully');
+    sendSuccess(reply, { message: 'Password reset successfully. You can now log in with your new password.' });
+  });
 
   // ========================================================================
   // POST /api/v1/users/send-verification — Send OTP to email before signup
