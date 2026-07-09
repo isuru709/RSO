@@ -75,12 +75,21 @@ export type BookingEventType =
   | 'booking.approved'
   | 'booking.rejected'
   | 'booking.cancelled'
+  | 'booking.updated'
   | 'booking.conflict_detected';
 
 export type ResourceEventType =
   | 'resource.underutilized'
   | 'resource.created'
-  | 'resource.updated';
+  | 'resource.updated'
+  | 'resource.deleted';
+
+export type UserEventType =
+  | 'user.signup'
+  | 'user.banned'
+  | 'user.unbanned'
+  | 'user.deleted'
+  | 'user.role_changed';
 
 export type OptimizationEventType =
   | 'optimization.scan';

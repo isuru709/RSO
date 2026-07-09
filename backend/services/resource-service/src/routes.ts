@@ -10,6 +10,7 @@ import {
   authMiddleware,
   requireRole,
   getSupabaseClient,
+  publishEvent,
   ApiError,
   sendSuccess,
   sendPaginated,
@@ -128,6 +129,18 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
 
     if (error) throw error;
 
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'resource.created',
+        payload: { resource_id: data.id, name: data.name, category: data.category, created_by: user.sub, created_by_role: user.appRole },
+        timestamp: new Date().toISOString(),
+        tenantId: tenantId || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish resource.created event (non-fatal)');
+    }
+
     logger.info({ resourceId: data.id, tenantId, category: body.category }, 'Resource created');
     sendSuccess(reply, data, 201);
   });
@@ -187,6 +200,18 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
 
     if (error) throw error;
 
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'resource.updated',
+        payload: { resource_id: id, name: data.name, updated_by: user.sub },
+        timestamp: new Date().toISOString(),
+        tenantId: existing.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish resource.updated event (non-fatal)');
+    }
+
     logger.info({ resourceId: id }, 'Resource updated');
     sendSuccess(reply, data);
   });
@@ -229,6 +254,18 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
       .single();
 
     if (error || !data) throw ApiError.notFound('Resource');
+
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'resource.deleted',
+        payload: { resource_id: id, name: data.name, deleted_by: user.sub },
+        timestamp: new Date().toISOString(),
+        tenantId: data.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish resource.deleted event (non-fatal)');
+    }
 
     logger.info({ resourceId: id }, 'Resource deleted');
     sendSuccess(reply, { message: 'Resource deleted', resource: data });

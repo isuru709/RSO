@@ -11,6 +11,7 @@ import {
   requireRole,
   getSupabaseClient,
   getRedisClient,
+  publishEvent,
   ApiError,
   sendSuccess,
   sendPaginated,
@@ -237,6 +238,19 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     await setUserClaims(user.sub, tenant.id, 'student');
 
     logger.info({ uid: user.sub, tenantId: tenant.id }, 'User signed up');
+
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'user.signup',
+        payload: { uid: user.sub, email: user.email || '', full_name: full_name || '', tenant_name: tenant.name },
+        timestamp: new Date().toISOString(),
+        tenantId: tenant.id,
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish user.signup event (non-fatal)');
+    }
+
     sendSuccess(reply, {
       profile,
       claims_set: true,
@@ -534,6 +548,19 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     }
 
     logger.info({ uid, newRole: role, newTenant: data.tenant_id, changedBy: request.user!.sub }, 'User role/tenant changed');
+
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'user.role_changed',
+        payload: { uid, email: data.email, full_name: data.full_name, new_role: role, changed_by: request.user!.sub },
+        timestamp: new Date().toISOString(),
+        tenantId: data.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish user.role_changed event (non-fatal)');
+    }
+
     sendSuccess(reply, {
       profile: data,
       claims_updated: true,
@@ -589,6 +616,20 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     }
 
     logger.info({ uid, bannedBy: request.user!.sub, reason }, 'User banned');
+
+    // Publish event for notification service
+    try {
+      const { data: bannedProfile } = await supabase.from('user_profiles').select('email, tenant_id').eq('firebase_uid', uid).single();
+      await publishEvent('system-events', {
+        type: 'user.banned',
+        payload: { uid, email: bannedProfile?.email || '', full_name: targetUser.full_name || '', reason: reason || 'Suspended by administrator' },
+        timestamp: new Date().toISOString(),
+        tenantId: bannedProfile?.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish user.banned event (non-fatal)');
+    }
+
     sendSuccess(reply, { message: `User ${targetUser.full_name || uid} has been suspended` });
   });
 
@@ -622,6 +663,20 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     }
 
     logger.info({ uid, unbannedBy: request.user!.sub }, 'User unbanned');
+
+    // Publish event for notification service
+    try {
+      const { data: unbannedProfile } = await supabase.from('user_profiles').select('email, tenant_id').eq('firebase_uid', uid).single();
+      await publishEvent('system-events', {
+        type: 'user.unbanned',
+        payload: { uid, email: unbannedProfile?.email || '', full_name: data.full_name || '' },
+        timestamp: new Date().toISOString(),
+        tenantId: unbannedProfile?.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish user.unbanned event (non-fatal)');
+    }
+
     sendSuccess(reply, { message: `User ${data.full_name || uid} has been reactivated` });
   });
 
@@ -694,6 +749,19 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
     }
 
     logger.info({ uid, deletedBy: user.sub }, 'User account deleted');
+
+    // Publish event for notification service
+    try {
+      await publishEvent('system-events', {
+        type: 'user.deleted',
+        payload: { uid, email: data.email || '', full_name: data.full_name || '', deleted_by: user.sub },
+        timestamp: new Date().toISOString(),
+        tenantId: data.tenant_id || 'system',
+      });
+    } catch (err) {
+      logger.warn({ err }, 'Failed to publish user.deleted event (non-fatal)');
+    }
+
     sendSuccess(reply, { message: 'User account deleted' });
   });
 

@@ -7,7 +7,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { logger, errorHandler } from '@rso/shared';
-import { notificationRoutes, startEventConsumer } from './routes';
+import { notificationRoutes, startBookingEventConsumer, startSystemEventConsumer } from './routes';
 
 const server = Fastify({ logger: false, ignoreTrailingSlash: true });
 
@@ -29,8 +29,9 @@ const start = async () => {
     await server.listen({ port, host: '0.0.0.0' });
     logger.info({ port, service: 'notification-service' }, 'Notification Service started');
 
-    // Start Redis Streams event consumer
-    startEventConsumer();
+    // Start Redis Streams event consumers
+    startBookingEventConsumer();
+    startSystemEventConsumer();
   } catch (err) {
     logger.error(err, 'Notification Service failed to start');
     process.exit(1);
