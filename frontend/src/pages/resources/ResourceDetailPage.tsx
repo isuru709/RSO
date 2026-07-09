@@ -143,21 +143,21 @@ export function ResourceDetailPage() {
       </button>
 
       {/* Resource Header Card */}
-      <div className="card" style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
+      <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <div style={{
-            width: 64, height: 64, borderRadius: 'var(--radius-lg)',
+            width: 48, height: 48, borderRadius: 'var(--radius-lg)',
             background: colors.bg, color: colors.color,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <Icon size={28} />
+            <Icon size={24} />
           </div>
 
-          <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {editing ? (
-              <input className="input" value={editName} onChange={e => setEditName(e.target.value)} style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }} />
+              <input className="input" value={editName} onChange={e => setEditName(e.target.value)} style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginBottom: 'var(--space-2)' }} />
             ) : (
-              <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>{resource.name}</h2>
+              <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, marginBottom: 'var(--space-2)', wordBreak: 'break-word' }}>{resource.name}</h2>
             )}
 
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -176,7 +176,7 @@ export function ResourceDetailPage() {
           </div>
 
           {isAdmin && (
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
               {editing ? (
                 <>
                   <button className="btn btn-success btn-sm" onClick={handleSave} disabled={saving}>
@@ -201,11 +201,11 @@ export function ResourceDetailPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-6)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)' }}>
         {/* Details Card */}
         <div className="card">
-          <h3 className="card-title" style={{ marginBottom: 'var(--space-5)' }}>Details</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-5)' }}>
+          <h3 className="card-title" style={{ marginBottom: 'var(--space-4)' }}>Details</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(170px, 100%), 1fr))', gap: 'var(--space-4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <MapPin size={18} style={{ color: 'var(--color-text-muted)' }} />
@@ -282,7 +282,7 @@ export function ResourceDetailPage() {
           </div>
 
           {todayBookings.length === 0 ? (
-            <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+            <div className="empty-state">
               <CalendarDays size={32} className="empty-state-icon" />
               <p className="empty-state-title">No bookings today</p>
               <p style={{ fontSize: 'var(--font-size-sm)' }}>This resource is available all day</p>
@@ -291,15 +291,16 @@ export function ResourceDetailPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {todayBookings.map(b => (
                 <div key={b.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                  padding: 'var(--space-3) var(--space-4)',
+                  display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                  padding: 'var(--space-3)',
                   background: 'var(--color-bg-glass)', borderRadius: 'var(--radius-md)',
+                  flexWrap: 'wrap',
                 }}>
-                  <Clock size={14} style={{ color: 'var(--color-text-muted)' }} />
-                  <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+                  <Clock size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                     {format(new Date(b.start_time), 'h:mm a')} – {format(new Date(b.end_time), 'h:mm a')}
                   </span>
-                  <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', flex: 1 }}>{b.title}</span>
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.title}</span>
                   <span className={`badge ${b.status === 'approved' ? 'badge-success' : 'badge-warning'}`}>{b.status}</span>
                 </div>
               ))}

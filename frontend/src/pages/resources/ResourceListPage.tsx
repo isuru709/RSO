@@ -123,7 +123,7 @@ export function ResourceListPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 280px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
           <input className="input" placeholder="Search resources..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
@@ -157,47 +157,47 @@ export function ResourceListPage() {
                 style={{ cursor: 'pointer', borderLeft: r.category === 'ST_RESOURCE' ? '3px solid #a855f7' : undefined }}
                 onClick={() => navigate(`/resources/${r.id}`)}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-4)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={24} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={20} />
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {r.category === 'ST_RESOURCE' && (
-                      <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600 }}>
+                      <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>
                         {isOwner ? 'My ST' : 'ST'}
                       </span>
                     )}
-                    <span className={`badge ${r.status === 'available' ? 'badge-success' : 'badge-neutral'}`}>
+                    <span className={`badge ${r.status === 'available' ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: 10 }}>
                       {r.status || 'available'}
                     </span>
-                    {manageable && (
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button 
-                          className="btn btn-icon" 
-                          style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 6, borderRadius: 'var(--radius-md)' }}
-                          onClick={(e) => handleToggleStatus(e, r)}
-                          title={r.status === 'available' ? "Temporarily Disable" : "Enable Resource"}
-                        >
-                          {r.status === 'available' ? <PowerOff size={16} /> : <Power size={16} />}
-                        </button>
-                        <button 
-                          className="btn btn-icon" 
-                          style={{ color: 'var(--color-info)', background: 'var(--color-info-light)', padding: 6, borderRadius: 'var(--radius-md)' }}
-                          onClick={(e) => { e.stopPropagation(); navigate(`/resources/${r.id}/edit`); }}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button 
-                          className="btn btn-icon" 
-                          style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 6, borderRadius: 'var(--radius-md)' }}
-                          onClick={(e) => handleDelete(e, r.id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
+                {manageable && (
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: 'var(--space-3)' }}>
+                    <button 
+                      className="btn btn-icon btn-sm" 
+                      style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                      onClick={(e) => handleToggleStatus(e, r)}
+                      title={r.status === 'available' ? "Temporarily Disable" : "Enable Resource"}
+                    >
+                      {r.status === 'available' ? <PowerOff size={14} /> : <Power size={14} />}
+                    </button>
+                    <button 
+                      className="btn btn-icon btn-sm" 
+                      style={{ color: 'var(--color-info)', background: 'var(--color-info-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/resources/${r.id}/edit`); }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button 
+                      className="btn btn-icon btn-sm" 
+                      style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                      onClick={(e) => handleDelete(e, r.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
                 <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>{r.name}</h3>
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
                   {r.description || `${(typeLabels[r.resource_type] || r.resource_type)} resource`}

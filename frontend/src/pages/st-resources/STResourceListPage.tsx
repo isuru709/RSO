@@ -127,7 +127,7 @@ export function STResourceListPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 280px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
           <input className="input" placeholder="Search items..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
@@ -165,8 +165,8 @@ export function STResourceListPage() {
                 style={{ cursor: 'default', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <BookOpen size={22} />
+                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <BookOpen size={20} />
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {isOwner && (

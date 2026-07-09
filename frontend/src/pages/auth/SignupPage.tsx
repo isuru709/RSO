@@ -322,7 +322,7 @@ export function SignupPage() {
                   onKeyDown={e => handleOtpKeyDown(i, e)}
                   disabled={otpVerifying || emailVerified}
                   style={{
-                    width: 48, height: 56,
+                    width: 42, height: 48,
                     textAlign: 'center',
                     fontSize: 'var(--font-size-xl)',
                     fontWeight: 700,

@@ -122,7 +122,7 @@ export function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 280px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
           <input className="input" placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
@@ -176,8 +176,8 @@ export function AdminUsersPage() {
                           <span className="badge badge-danger" style={{ fontSize: 9, padding: '1px 6px' }}>Banned</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Mail size={10} /> {user.email}
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+                        <Mail size={10} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
                       </div>
                     </div>
                   </div>
@@ -210,9 +210,10 @@ export function AdminUsersPage() {
                         className="btn btn-sm btn-ghost"
                         onClick={() => setTokenModalUser(user)}
                         title="Manage tokens"
-                        style={{ gap: 4, color: 'var(--color-warning, #d97706)' }}
+                        style={{ gap: 4, color: 'var(--color-warning, #d97706)', padding: '4px 8px' }}
                       >
-                        <Coins size={12} /> Tokens
+                        <Coins size={12} />
+                        <span className="mobile-hide">Tokens</span>
                       </button>
                     )}
                     {/* Ban/Unban for main admin */}
@@ -222,27 +223,30 @@ export function AdminUsersPage() {
                           className="btn btn-sm btn-ghost"
                           onClick={() => handleBan(user.firebase_uid, user.full_name || user.email)}
                           title="Suspend user"
-                          style={{ gap: 4, color: 'var(--color-danger)' }}
+                          style={{ gap: 4, color: 'var(--color-danger)', padding: '4px 8px' }}
                         >
-                          <ShieldBan size={12} /> Ban
+                          <ShieldBan size={12} />
+                          <span className="mobile-hide">Ban</span>
                         </button>
                       ) : (
                         <button
                           className="btn btn-sm btn-ghost"
                           onClick={() => handleUnban(user.firebase_uid, user.full_name || user.email)}
                           title="Reactivate user"
-                          style={{ gap: 4, color: 'var(--color-success, #16a34a)' }}
+                          style={{ gap: 4, color: 'var(--color-success, #16a34a)', padding: '4px 8px' }}
                         >
-                          <ShieldCheck size={12} /> Unban
+                          <ShieldCheck size={12} />
+                          <span className="mobile-hide">Unban</span>
                         </button>
                       )
                     )}
                     <button
                       className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(user.firebase_uid, user.full_name || user.email)}
-                      style={{ gap: 4 }}
+                      style={{ gap: 4, padding: '4px 8px' }}
                     >
-                      <Trash2 size={12} /> Delete
+                      <Trash2 size={12} />
+                      <span className="mobile-hide">Delete</span>
                     </button>
                   </div>
                 </td>

@@ -130,7 +130,7 @@ export function AdminTenantsPage() {
 
       {/* Create/Edit Form */}
       {showForm && (
-        <div className="card" style={{ marginBottom: 'var(--space-6)', borderColor: 'var(--color-primary)' }}>
+        <div className="card" style={{ marginBottom: 'var(--space-4)', borderColor: 'var(--color-primary)' }}>
           <h3 className="card-title" style={{ marginBottom: 'var(--space-4)' }}>
             {editingId ? 'Edit Tenant' : 'Create New Tenant'}
           </h3>
@@ -161,7 +161,7 @@ export function AdminTenantsPage() {
               <label className="input-label">Description</label>
               <textarea className="input" placeholder="Brief description of the faculty/department" value={formDesc} onChange={e => setFormDesc(e.target.value)} style={{ minHeight: 60 }} />
             </div>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button type="button" className="btn btn-ghost" onClick={resetForm}><X size={16} /> Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -173,7 +173,7 @@ export function AdminTenantsPage() {
       )}
 
       {/* Search */}
-      <div style={{ position: 'relative', marginBottom: 'var(--space-6)' }}>
+      <div style={{ position: 'relative', marginBottom: 'var(--space-4)' }}>
         <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
         <input className="input" placeholder="Search tenants..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
       </div>
@@ -184,11 +184,11 @@ export function AdminTenantsPage() {
           <div key={t.id} className="card" style={{ opacity: t.is_active ? 1 : 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
               <div style={{
-                width: 48, height: 48, borderRadius: 'var(--radius-md)',
+                width: 40, height: 40, borderRadius: 'var(--radius-md)',
                 background: 'var(--color-primary-light)', color: 'var(--color-primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <Building2 size={24} />
+                <Building2 size={20} />
               </div>
               <span className={`badge ${t.is_active ? 'badge-success' : 'badge-neutral'}`}>
                 {t.is_active ? 'Active' : 'Inactive'}
@@ -203,15 +203,15 @@ export function AdminTenantsPage() {
               <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>{t.description}</p>
             )}
             {t.contact_email && (
-              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 'var(--space-3)' }}>
-                <Mail size={12} /> {t.contact_email}
+              <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 'var(--space-3)', overflow: 'hidden' }}>
+                <Mail size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.contact_email}</span>
               </p>
             )}
             <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>
               Created {format(new Date(t.created_at), 'MMM d, yyyy')}
             </p>
 
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
               <button className="btn btn-secondary btn-sm" onClick={() => startEdit(t)} style={{ flex: 1 }}>
                 <Edit3 size={14} /> Edit
               </button>

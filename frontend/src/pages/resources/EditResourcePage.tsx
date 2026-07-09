@@ -127,11 +127,11 @@ export function EditResourcePage() {
       </div>
 
       {fetching ? (
-        <div style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
           <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto', color: 'var(--color-primary)' }} />
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="card" style={{ padding: 'var(--space-8)', display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        <form onSubmit={handleSubmit} className="card form-card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <div>
             <label className="input-label" style={{ marginBottom: 'var(--space-3)', display: 'block' }}>Resource Type *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>

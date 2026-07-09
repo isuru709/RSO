@@ -77,7 +77,7 @@ export function STBorrowsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="tabs" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="tabs" style={{ marginBottom: 'var(--space-4)' }}>
         <button className={`tab ${tab === 'my' ? 'tab-active' : ''}`} onClick={() => setTab('my')}>
           My Borrows
         </button>

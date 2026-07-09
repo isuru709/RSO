@@ -129,7 +129,7 @@ export function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid-stats stagger" style={{ marginBottom: 'var(--space-8)' }}>
+      <div className="grid-stats stagger" style={{ marginBottom: 'var(--space-6)' }}>
         {statCards.map((s, i) => (
           <div key={i} className="card stat-card">
             <div className="stat-card-header">
@@ -138,7 +138,7 @@ export function DashboardPage() {
                 <s.icon size={20} />
               </div>
             </div>
-            <div className="stat-card-value" style={s.isText ? { fontSize: 'var(--font-size-xl)', textTransform: 'capitalize' } : {}}>
+            <div className="stat-card-value" style={s.isText ? { fontSize: 'var(--font-size-lg)', textTransform: 'capitalize' } : {}}>
               {s.isText ? s.value : s.value}
             </div>
             {!s.isText && (
@@ -160,7 +160,7 @@ export function DashboardPage() {
           </div>
 
           {recentBookings.length === 0 ? (
-            <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+            <div className="empty-state">
               <CalendarDays size={40} className="empty-state-icon" />
               <p className="empty-state-title">No bookings yet</p>
               <p>Create your first booking to get started</p>
@@ -200,21 +200,21 @@ export function DashboardPage() {
           <div className="card-header">
             <h3 className="card-title">Quick Actions</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
-            <button className="card card-interactive" style={{ padding: 'var(--space-5)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/resources')}>
-              <Monitor size={24} style={{ color: 'var(--color-primary)', marginBottom: 8 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-3)' }}>
+            <button className="card card-interactive" style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/resources')}>
+              <Monitor size={22} style={{ color: 'var(--color-primary)', marginBottom: 6 }} />
               <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>Browse Resources</div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 4 }}>Find labs, halls & equipment</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>Find labs, halls & equipment</div>
             </button>
-            <button className="card card-interactive" style={{ padding: 'var(--space-5)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/bookings/new')}>
-              <CalendarDays size={24} style={{ color: 'var(--color-success)', marginBottom: 8 }} />
+            <button className="card card-interactive" style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/bookings/new')}>
+              <CalendarDays size={22} style={{ color: 'var(--color-success)', marginBottom: 6 }} />
               <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>New Booking</div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 4 }}>Reserve a time slot</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>Reserve a time slot</div>
             </button>
-            <button className="card card-interactive" style={{ padding: 'var(--space-5)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/notifications')}>
-              <Clock size={24} style={{ color: 'var(--color-warning)', marginBottom: 8 }} />
+            <button className="card card-interactive" style={{ padding: 'var(--space-4)', textAlign: 'left', cursor: 'pointer' }} onClick={() => navigate('/notifications')}>
+              <Clock size={22} style={{ color: 'var(--color-warning)', marginBottom: 6 }} />
               <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>Notifications</div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 4 }}>Check latest updates</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', marginTop: 2 }}>Check latest updates</div>
             </button>
           </div>
         </div>

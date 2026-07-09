@@ -37,6 +37,8 @@ services:
         condition: service_healthy
       notification-service:
         condition: service_healthy
+      frontend:
+        condition: service_started
     networks:
       - rso-internal
     restart: unless-stopped
@@ -202,6 +204,21 @@ services:
       timeout: 3s
       start_period: 5s
       retries: 3
+
+  # ==========================================================================
+  # Frontend — React SPA served by Nginx
+  # ==========================================================================
+  frontend:
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+    container_name: rso-frontend
+    networks:
+      - rso-internal
+    restart: unless-stopped
+    expose:
+      - "80"
+
 
 volumes:
   redis-data:

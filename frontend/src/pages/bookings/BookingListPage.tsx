@@ -96,7 +96,7 @@ export function BookingListPage() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 280px' }}>
           <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
           <input className="input" placeholder="Search bookings..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40 }} />
@@ -124,11 +124,11 @@ export function BookingListPage() {
           {filtered.map(b => {
             const sc = statusConfig[b.status] || statusConfig.pending;
             return (
-              <div key={b.id} className="card card-interactive" style={{ padding: 'var(--space-4) var(--space-5)', cursor: 'pointer' }} onClick={() => navigate(`/bookings/${b.id}`)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-1)' }}>
-                      <span style={{ fontWeight: 600 }}>{b.title}</span>
+              <div key={b.id} className="card card-interactive" style={{ cursor: 'pointer' }} onClick={() => navigate(`/bookings/${b.id}`)}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 600, wordBreak: 'break-word' }}>{b.title}</span>
                       <span className={`badge ${sc.class}`}>{sc.label}</span>
                     </div>
                     <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>

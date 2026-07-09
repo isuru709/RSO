@@ -59,7 +59,7 @@ export function NewSTResourcePage() {
         <ArrowLeft size={18} /> Back to ST Resources
       </button>
 
-      <div className="card" style={{ padding: 'var(--space-8)', borderTop: '4px solid #a855f7' }}>
+      <div className="card form-card" style={{ borderTop: '4px solid #a855f7' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
           <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Share2 size={24} />

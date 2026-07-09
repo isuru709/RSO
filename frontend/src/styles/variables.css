@@ -97,7 +97,7 @@
   --sidebar-width: 260px;
   --sidebar-collapsed: 72px;
   --topbar-height: 64px;
-  --bottomnav-height: 64px;
+  --bottomnav-height: 60px;
 
   /* ── Transitions ────────────────────────────────────────── */
   --transition-fast: 150ms ease;

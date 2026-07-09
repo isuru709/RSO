@@ -144,7 +144,7 @@ export function ProfilePage() {
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div className="page-header">
         <h2 className="page-title">My Profile</h2>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
           {!editing && (
             <button className="btn btn-secondary" onClick={() => setEditing(true)}>
               <Edit3 size={16} /> Edit Profile
@@ -157,7 +157,7 @@ export function ProfilePage() {
       </div>
 
       {/* Avatar + Name Card */}
-      <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
+      <div className="card" style={{ textAlign: 'center' }}>
         <div style={{ position: 'relative', display: 'inline-block', marginBottom: 'var(--space-4)' }}>
           {avatarUrl ? (
             <img
@@ -255,7 +255,7 @@ export function ProfilePage() {
             </div>
           </form>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 'var(--space-4)' }}>
             <DetailItem icon={<Mail size={16} />} label="Email" value={profile?.email || '—'} />
             <DetailItem icon={<User size={16} />} label="Full Name" value={profile?.full_name || '—'} />
             <DetailItem icon={<Hash size={16} />} label="Member ID" value={profile?.member_id || '—'} />

@@ -57,9 +57,9 @@ export function BookingDetailPage() {
       <button className="btn btn-ghost btn-sm" style={{ marginBottom: 'var(--space-4)' }} onClick={() => navigate(-1)}>
         <ArrowLeft size={18} /> Back
       </button>
-      <div className="card" style={{ padding: 'var(--space-8)' }}>
+      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>{booking.title}</h2>
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, wordBreak: 'break-word' }}>{booking.title}</h2>
           {isAdmin && (
             <button className="btn btn-outline btn-sm" onClick={() => setShowEdit(true)}>
               <Edit2 size={16} /> Edit Booking

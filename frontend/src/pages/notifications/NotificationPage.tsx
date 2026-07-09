@@ -90,7 +90,6 @@ export function NotificationPage() {
                 className="card"
                 onClick={() => !n.is_read && markRead(n.id)}
                 style={{
-                  padding: 'var(--space-4) var(--space-5)',
                   cursor: n.is_read ? 'default' : 'pointer',
                   borderLeft: n.is_read ? undefined : '3px solid var(--color-primary)',
                   opacity: n.is_read ? 0.7 : 1,
