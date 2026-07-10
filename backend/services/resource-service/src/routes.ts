@@ -217,6 +217,73 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ========================================================================
+  // POST /api/v1/resources/:id/image — Upload image for a resource (≤1MB)
+  // ========================================================================
+  server.post('/api/v1/resources/:id/image', {
+    preHandler: [authMiddleware],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const user = request.user!;
+
+    // Fetch existing resource for permission check
+    const { data: existing } = await supabase
+      .from('resources')
+      .select('tenant_id, category, created_by')
+      .eq('id', id)
+      .single();
+
+    if (!existing) throw ApiError.notFound('Resource');
+
+    // Permission logic (same as update)
+    if (existing.category === 'ST_RESOURCE') {
+      const canEdit = user.sub === existing.created_by ||
+        ['main_admin', 'tenant_admin', 'lecturer', 'junior_lecturer'].includes(user.appRole);
+      if (!canEdit) throw ApiError.forbidden('You cannot upload an image for this resource');
+    } else {
+      if (!['main_admin', 'tenant_admin'].includes(user.appRole)) {
+        throw ApiError.forbidden('Only admins can upload images for this resource');
+      }
+      if (user.appRole !== 'main_admin' && existing.tenant_id !== user.tenantId) {
+        throw ApiError.forbidden('This resource belongs to another faculty');
+      }
+    }
+
+    const { image, filename } = request.body as { image: string; filename: string };
+    if (!image) throw ApiError.badRequest('image (base64) is required');
+
+    const ext = (filename || 'image.jpg').split('.').pop()?.toLowerCase() || 'jpg';
+    const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!allowed.includes(ext)) {
+      throw ApiError.badRequest(`File type .${ext} not allowed. Use: ${allowed.join(', ')}`);
+    }
+
+    // Decode base64
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    if (buffer.length > 1 * 1024 * 1024) {
+      throw ApiError.badRequest('File too large. Max 1MB');
+    }
+
+    const fileName = `${id}_${Date.now()}.${ext}`;
+    const uploadDir = '/app/uploads/resources';
+    const { mkdir, writeFile } = await import('fs/promises');
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(`${uploadDir}/${fileName}`, buffer);
+
+    const imageUrl = `/uploads/resources/${fileName}`;
+
+    // Update resource
+    await supabase
+      .from('resources')
+      .update({ image_url: imageUrl })
+      .eq('id', id);
+
+    logger.info({ resourceId: id, imageUrl }, 'Resource image uploaded');
+    sendSuccess(reply, { image_url: imageUrl });
+  });
+
+  // ========================================================================
   // DELETE /api/v1/resources/:id — Delete a resource
   // ST_RESOURCE: owner student + lecturers + jr. lecturers + admins
   // Other resources: only admins

@@ -17,6 +17,7 @@ interface STResource {
   is_available: boolean;
   created_by: string;
   created_at: string;
+  image_url?: string;
 }
 
 const conditionColors: Record<string, { color: string; bg: string }> = {
@@ -165,9 +166,17 @@ export function STResourceListPage() {
                 style={{ cursor: 'default', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <BookOpen size={20} />
-                  </div>
+                  {r.image_url ? (
+                    <img
+                      src={r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url}
+                      alt={r.name}
+                      style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <BookOpen size={20} />
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {isOwner && (
                       <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>My Item</span>

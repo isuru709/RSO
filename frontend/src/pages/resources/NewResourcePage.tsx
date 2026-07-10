@@ -1,10 +1,10 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  ArrowLeft, Loader2, Monitor, MapPin, Users, DollarSign, FileText, Beaker, Presentation, Laptop, Wrench, Check, Building, BookOpen, Share2
+  ArrowLeft, Loader2, Monitor, MapPin, Users, DollarSign, FileText, Beaker, Presentation, Laptop, Wrench, Check, Building, BookOpen, Share2, ImagePlus, X
 } from 'lucide-react';
 
 const resourceTypes = [
@@ -31,6 +31,9 @@ export function NewResourcePage() {
   const [loading, setLoading] = useState(false);
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenant, setSelectedTenant] = useState('none');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { claims } = useAuth();
@@ -49,6 +52,37 @@ export function NewResourcePage() {
       setResourceType('student_resource');
     }
   }, [claims]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1 * 1024 * 1024) {
+      toast('warning', 'Image must be 1MB or less');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast('warning', 'Please select an image file');
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const uploadImage = async (resourceId: string) => {
+    if (!imageFile || !imagePreview) return;
+    await api.post(`/resources/${resourceId}/image`, {
+      image: imagePreview,
+      filename: imageFile.name,
+    });
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -89,6 +123,14 @@ export function NewResourcePage() {
     const res = await api.post('/resources', payload);
 
     if (res.success) {
+      // Upload image if selected
+      if (imageFile && (res.data as any)?.id) {
+        try {
+          await uploadImage((res.data as any).id);
+        } catch {
+          toast('warning', 'Resource created but image upload failed');
+        }
+      }
       toast('success', isStudent ? 'Your resource has been shared!' : 'Resource created successfully!');
       navigate('/resources');
     } else {
@@ -96,6 +138,63 @@ export function NewResourcePage() {
     }
     setLoading(false);
   };
+
+  // Shared image upload UI component
+  const ImageUploadField = () => (
+    <div className="input-group">
+      <label className="input-label">Image (optional, max 1MB)</label>
+      {imagePreview ? (
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <img
+            src={imagePreview}
+            alt="Preview"
+            style={{
+              width: '100%', maxHeight: 200, objectFit: 'cover',
+              borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+            }}
+          />
+          <button
+            type="button"
+            onClick={removeImage}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.6)', color: 'white',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: 'pointer',
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => imageInputRef.current?.click()}
+          style={{
+            width: '100%', padding: 'var(--space-6)',
+            border: '2px dashed var(--color-border)', borderRadius: 'var(--radius-md)',
+            background: 'var(--color-bg-glass)', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)',
+            color: 'var(--color-text-muted)', transition: 'border-color 200ms ease',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+        >
+          <ImagePlus size={24} />
+          <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>Click to upload an image</span>
+          <span style={{ fontSize: 'var(--font-size-xs)' }}>JPG, PNG, WebP, GIF — Max 1MB</span>
+        </button>
+      )}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={handleImageSelect}
+        style={{ display: 'none' }}
+      />
+    </div>
+  );
 
   // ========== STUDENT MODE ==========
   if (isStudent) {
@@ -154,6 +253,9 @@ export function NewResourcePage() {
                 <input id="st-name" className="input" placeholder="e.g., Data Structures Notebook" value={name} onChange={e => setName(e.target.value)} required style={{ paddingLeft: 40 }} />
               </div>
             </div>
+
+            {/* Image Upload */}
+            <ImageUploadField />
 
             {/* Location */}
             <div className="input-group">
@@ -249,6 +351,9 @@ export function NewResourcePage() {
               <input id="res-name" className="input" placeholder="e.g., Computer Lab A" value={name} onChange={e => setName(e.target.value)} required style={{ paddingLeft: 40 }} />
             </div>
           </div>
+
+          {/* Image Upload */}
+          <ImageUploadField />
 
           {/* Tenant Selection (Main Admin Only) */}
           {claims?.app_role === 'main_admin' && (

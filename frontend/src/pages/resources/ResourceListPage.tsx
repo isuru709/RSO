@@ -15,6 +15,7 @@ interface Resource {
   description?: string;
   created_by?: string;
   hourly_cost?: number;
+  image_url?: string;
 }
 
 const typeIcons: Record<string, any> = {
@@ -158,9 +159,17 @@ export function ResourceListPage() {
                 onClick={() => navigate(`/resources/${r.id}`)}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon size={20} />
-                  </div>
+                  {r.image_url ? (
+                    <img
+                      src={r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url}
+                      alt={r.name}
+                      style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={20} />
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     {r.category === 'ST_RESOURCE' && (
                       <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>

@@ -84,6 +84,7 @@ export async function stResourceRoutes(server: FastifyInstance): Promise<void> {
         condition: body.condition || 'good',
         pickup_location: body.pickup_location || null,
         hourly_token_cost: body.hourly_token_cost ? parseInt(body.hourly_token_cost as string) : 0,
+        image_url: body.image_url || null,
         is_available: true,
         created_by: user.sub,
       })
@@ -94,6 +95,63 @@ export async function stResourceRoutes(server: FastifyInstance): Promise<void> {
 
     logger.info({ stResourceId: data.id, student: user.sub }, 'ST Resource created');
     sendSuccess(reply, data, 201);
+  });
+
+  // ========================================================================
+  // POST /api/v1/st-resources/:id/image — Upload image (≤1MB)
+  // ========================================================================
+  server.post('/api/v1/st-resources/:id/image', {
+    preHandler: [authMiddleware],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const user = request.user!;
+
+    // Fetch existing for permission check
+    const { data: existing } = await supabase
+      .from('st_resources')
+      .select('created_by')
+      .eq('id', id)
+      .single();
+
+    if (!existing) throw ApiError.notFound('ST Resource');
+
+    const canEdit = user.sub === existing.created_by ||
+      ['main_admin', 'tenant_admin', 'lecturer', 'junior_lecturer'].includes(user.appRole);
+    if (!canEdit) throw ApiError.forbidden('You cannot upload an image for this resource');
+
+    const { image, filename } = request.body as { image: string; filename: string };
+    if (!image) throw ApiError.badRequest('image (base64) is required');
+
+    const ext = (filename || 'image.jpg').split('.').pop()?.toLowerCase() || 'jpg';
+    const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!allowed.includes(ext)) {
+      throw ApiError.badRequest(`File type .${ext} not allowed. Use: ${allowed.join(', ')}`);
+    }
+
+    // Decode base64
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    if (buffer.length > 1 * 1024 * 1024) {
+      throw ApiError.badRequest('File too large. Max 1MB');
+    }
+
+    const fileName = `${id}_${Date.now()}.${ext}`;
+    const uploadDir = '/app/uploads/st-resources';
+    const { mkdir, writeFile } = await import('fs/promises');
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(`${uploadDir}/${fileName}`, buffer);
+
+    const imageUrl = `/uploads/st-resources/${fileName}`;
+
+    // Update ST resource
+    await supabase
+      .from('st_resources')
+      .update({ image_url: imageUrl })
+      .eq('id', id);
+
+    logger.info({ stResourceId: id, imageUrl }, 'ST Resource image uploaded');
+    sendSuccess(reply, { image_url: imageUrl });
   });
 
   // ========================================================================

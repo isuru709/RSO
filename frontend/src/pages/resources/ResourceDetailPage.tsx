@@ -22,6 +22,7 @@ interface Resource {
   is_bookable: boolean;
   created_at: string;
   description?: string;
+  image_url?: string;
 }
 
 interface AvailabilityBooking {
@@ -143,7 +144,19 @@ export function ResourceDetailPage() {
       </button>
 
       {/* Resource Header Card */}
-      <div className="card" style={{ marginBottom: 'var(--space-4)' }}>
+      <div className="card" style={{ marginBottom: 'var(--space-4)', overflow: 'hidden' }}>
+        {resource.image_url && (
+          <div style={{ margin: '-20px -20px 16px -20px' }}>
+            <img
+              src={resource.image_url.startsWith('/uploads/') ? `${window.location.origin}${resource.image_url}` : resource.image_url}
+              alt={resource.name}
+              style={{
+                width: '100%', maxHeight: 240, objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <div style={{
             width: 48, height: 48, borderRadius: 'var(--radius-lg)',

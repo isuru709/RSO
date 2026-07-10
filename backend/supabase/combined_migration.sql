@@ -418,3 +418,5 @@ CREATE POLICY "st_resources_delete_owner_or_admin"
         OR (SELECT public.is_tenant_admin())
         OR public.current_app_role() IN ('lecturer', 'junior_lecturer')
     );
+
+ALTER TABLE st_resources ADD COLUMN IF NOT EXISTS image_url TEXT;

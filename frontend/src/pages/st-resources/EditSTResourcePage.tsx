@@ -1,8 +1,8 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
-import { ArrowLeft, Loader2, BookOpen, MapPin, FileText, DollarSign, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, MapPin, FileText, DollarSign, Save, ImagePlus, X } from 'lucide-react';
 
 const conditions = [
   { value: 'excellent', label: 'Excellent', color: '#16a34a' },
@@ -20,6 +20,10 @@ export function EditSTResourcePage() {
   const [hourlyTokenCost, setHourlyTokenCost] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -31,12 +35,49 @@ export function EditSTResourcePage() {
         setCondition(res.data.condition || 'good');
         setPickupLocation(res.data.pickup_location || '');
         setHourlyTokenCost(res.data.hourly_token_cost?.toString() || '0');
+        if (res.data.image_url) {
+          setExistingImageUrl(res.data.image_url);
+        }
       } else {
         toast('error', 'Resource not found');
         navigate('/st-resources');
       }
     }).finally(() => setFetching(false));
   }, [id]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1 * 1024 * 1024) {
+      toast('warning', 'Image must be 1MB or less');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast('warning', 'Please select an image file');
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const getDisplayImageUrl = () => {
+    if (imagePreview) return imagePreview;
+    if (existingImageUrl) {
+      if (existingImageUrl.startsWith('/uploads/')) {
+        return `${window.location.origin}${existingImageUrl}`;
+      }
+      return existingImageUrl;
+    }
+    return null;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -55,6 +96,17 @@ export function EditSTResourcePage() {
     });
 
     if (res.success) {
+      // Upload new image if selected
+      if (imageFile && imagePreview) {
+        try {
+          await api.post(`/st-resources/${id}/image`, {
+            image: imagePreview,
+            filename: imageFile.name,
+          });
+        } catch {
+          toast('warning', 'Resource updated but image upload failed');
+        }
+      }
       toast('success', 'Resource updated!');
       navigate('/st-resources');
     } else {
@@ -70,6 +122,8 @@ export function EditSTResourcePage() {
       </div>
     );
   }
+
+  const displayImage = getDisplayImageUrl();
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -96,6 +150,76 @@ export function EditSTResourcePage() {
               <BookOpen size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
               <input id="st-name" className="input" placeholder="e.g., Data Structures Notebook" value={name} onChange={e => setName(e.target.value)} required style={{ paddingLeft: 40 }} />
             </div>
+          </div>
+
+          {/* Image Upload */}
+          <div className="input-group">
+            <label className="input-label">Image (optional, max 1MB)</label>
+            {displayImage ? (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img
+                  src={displayImage}
+                  alt="Resource"
+                  style={{
+                    width: '100%', maxHeight: 200, objectFit: 'cover',
+                    borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { removeImage(); setExistingImageUrl(null); }}
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.6)', color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  <X size={14} />
+                </button>
+                {existingImageUrl && !imagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    style={{
+                      position: 'absolute', bottom: 8, right: 8,
+                      padding: '4px 10px', borderRadius: 'var(--radius-md)',
+                      background: 'rgba(0,0,0,0.6)', color: 'white',
+                      border: 'none', cursor: 'pointer', fontSize: 'var(--font-size-xs)',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    <ImagePlus size={12} /> Change
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                style={{
+                  width: '100%', padding: 'var(--space-6)',
+                  border: '2px dashed var(--color-border)', borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-bg-glass)', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)',
+                  color: 'var(--color-text-muted)', transition: 'border-color 200ms ease',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = '#a855f7')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+              >
+                <ImagePlus size={24} />
+                <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>Click to upload an image</span>
+                <span style={{ fontSize: 'var(--font-size-xs)' }}>JPG, PNG, WebP, GIF — Max 1MB</span>
+              </button>
+            )}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
           </div>
 
           {/* Condition */}
