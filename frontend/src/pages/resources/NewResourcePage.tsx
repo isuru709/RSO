@@ -150,7 +150,7 @@ export function NewResourcePage() {
   // Shared image upload UI component
   const ImageUploadField = () => (
     <div className="input-group">
-      <label className="input-label">Image (optional, max 1MB)</label>
+      <label className="input-label">Image (optional, max 5MB)</label>
       {imagePreview ? (
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <img

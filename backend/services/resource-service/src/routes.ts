@@ -261,8 +261,8 @@ export async function resourceRoutes(server: FastifyInstance): Promise<void> {
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    if (buffer.length > 1 * 1024 * 1024) {
-      throw ApiError.badRequest('File too large. Max 1MB');
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw ApiError.badRequest('File too large. Max 5MB');
     }
 
     const fileName = `${id}_${Date.now()}.${ext}`;
