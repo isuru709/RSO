@@ -932,27 +932,48 @@ export async function userRoutes(server: FastifyInstance): Promise<void> {
       throw ApiError.badRequest(`File type .${ext} not allowed. Use: ${allowed.join(', ')}`);
     }
 
-    // Decode base64
+    // Decode base64 — handle both raw base64 and data URI formats
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
+    let buffer: Buffer;
+    try {
+      buffer = Buffer.from(base64Data, 'base64');
+    } catch {
+      throw ApiError.badRequest('Invalid base64 image data');
+    }
 
-    if (buffer.length > 1 * 1024 * 1024) {
-      throw ApiError.badRequest('File too large. Max 1MB');
+    if (buffer.length === 0) {
+      throw ApiError.badRequest('Image data is empty');
+    }
+
+    if (buffer.length > 2 * 1024 * 1024) {
+      throw ApiError.badRequest('File too large. Max 2MB');
     }
 
     const fileName = `${uid}_${Date.now()}.${ext}`;
     const uploadDir = '/app/uploads/avatars';
-    const { mkdir, writeFile } = await import('fs/promises');
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(`${uploadDir}/${fileName}`, buffer);
+
+    // Write file to disk
+    try {
+      const { mkdir, writeFile } = await import('fs/promises');
+      await mkdir(uploadDir, { recursive: true });
+      await writeFile(`${uploadDir}/${fileName}`, buffer);
+    } catch (fsErr) {
+      logger.error({ err: fsErr, uploadDir, fileName }, 'Failed to write avatar file');
+      throw ApiError.internal('Failed to save avatar file');
+    }
 
     const avatarUrl = `/uploads/avatars/${fileName}`;
 
     // Update user profile
-    await supabase
+    const { error: dbErr } = await supabase
       .from('user_profiles')
       .update({ avatar_url: avatarUrl })
       .eq('firebase_uid', uid);
+
+    if (dbErr) {
+      logger.error({ err: dbErr, uid }, 'Failed to update avatar_url in database');
+      throw ApiError.internal('Failed to update avatar in profile');
+    }
 
     logger.info({ uid, avatarUrl }, 'Avatar uploaded');
     sendSuccess(reply, { avatar_url: avatarUrl });

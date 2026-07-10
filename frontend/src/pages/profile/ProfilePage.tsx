@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../lib/api';
+import { ImageCropModal } from '../../components/ImageCropModal';
 import {
   User, Mail, Phone, Hash, Shield, Camera, Save, LogOut, Trash2,
   Edit3, X, Loader2, Calendar,
@@ -77,31 +78,40 @@ export function ProfilePage() {
     setSaving(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
-    if (file.size > 1 * 1024 * 1024) {
-      toast('warning', 'File too large. Max 1MB');
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast('warning', 'File too large. Max 5MB');
       return;
     }
+    if (!file.type.startsWith('image/')) {
+      toast('warning', 'Please select an image file');
+      return;
+    }
+    setCropFile(file);
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      const res = await api.post(`/users/${user.uid}/avatar`, {
-        image: base64,
-        filename: file.name,
-      });
-      if (res.success && (res.data as any)?.avatar_url) {
-        const newUrl = (res.data as any).avatar_url + '?t=' + Date.now();
-        setProfile(prev => prev ? { ...prev, avatar_url: newUrl } : null);
-        toast('success', 'Avatar updated');
-      } else {
-        toast('error', 'Failed to upload avatar');
-      }
-    };
-    reader.readAsDataURL(file);
+  const handleAvatarCrop = async (base64: string, filename: string) => {
+    setCropFile(null);
+    if (!user) return;
+
+    const res = await api.post(`/users/${user.uid}/avatar`, {
+      image: base64,
+      filename,
+    });
+    if (res.success && (res.data as any)?.avatar_url) {
+      const newUrl = (res.data as any).avatar_url + '?t=' + Date.now();
+      setProfile(prev => prev ? { ...prev, avatar_url: newUrl } : null);
+      toast('success', 'Avatar updated');
+    } else {
+      toast('error', res.error?.message || 'Failed to upload avatar');
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -119,9 +129,21 @@ export function ProfilePage() {
 
   const getAvatarUrl = () => {
     if (profile?.avatar_url) {
-      // If it's a relative URL, prepend the API base
-      if (profile.avatar_url.startsWith('/uploads/')) {
-        return `${window.location.origin}${profile.avatar_url}`;
+      // Strip cache-busting param for path check
+      const cleanUrl = profile.avatar_url.split('?')[0];
+      // If it's a relative upload path, resolve via the API origin
+      if (cleanUrl.startsWith('/uploads/')) {
+        const apiBase = import.meta.env.VITE_API_URL || '/api/v1';
+        // If API is relative, use same origin; otherwise extract the API origin
+        if (apiBase.startsWith('/')) {
+          return `${window.location.origin}${profile.avatar_url}`;
+        }
+        try {
+          const apiOrigin = new URL(apiBase).origin;
+          return `${apiOrigin}${profile.avatar_url}`;
+        } catch {
+          return `${window.location.origin}${profile.avatar_url}`;
+        }
       }
       return profile.avatar_url;
     }
@@ -140,7 +162,7 @@ export function ProfilePage() {
   const initials = (profile?.full_name || user?.email || 'U')[0].toUpperCase();
   const avatarUrl = getAvatarUrl();
 
-  return (
+  const content = (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div className="page-header">
         <h2 className="page-title">My Profile</h2>
@@ -194,7 +216,7 @@ export function ProfilePage() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={handleAvatarUpload}
+            onChange={handleAvatarSelect}
             style={{ display: 'none' }}
           />
         </div>
@@ -295,6 +317,22 @@ export function ProfilePage() {
       </div>
     </div>
   );
+
+  return (
+    <>
+      {content}
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          aspectRatio={1}
+          circular={true}
+          maxOutputSize={400}
+          onCrop={handleAvatarCrop}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
+    </>
+  );
 }
 
 function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -317,4 +355,5 @@ function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: stri
       </div>
     </div>
   );
+
 }

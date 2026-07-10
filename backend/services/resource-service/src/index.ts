@@ -9,7 +9,11 @@ import { resourceRoutes } from './routes';
 import { stResourceRoutes } from './stRoutes';
 import { stBookingRoutes } from './stBookingRoutes';
 
-const server = Fastify({ logger: false, ignoreTrailingSlash: true });
+const server = Fastify({
+  logger: false,
+  ignoreTrailingSlash: true,
+  bodyLimit: 5 * 1024 * 1024, // 5MB — base64 images are ~33% larger than raw bytes
+});
 
 server.register(cors, { origin: true });
 server.setErrorHandler(errorHandler);

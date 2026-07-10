@@ -159,69 +159,121 @@ export function STResourceListPage() {
             const manageable = canManage(r);
             const isOwner = r.created_by === user?.uid;
             const canBorrow = isStudent && !isOwner && r.is_available;
+            const imgSrc = r.image_url
+              ? (r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url)
+              : null;
+
             return (
               <div
                 key={r.id}
-                className="card card-interactive"
-                style={{ cursor: 'default', borderLeft: '3px solid #a855f7', opacity: r.is_available ? 1 : 0.6 }}
+                className="card card-floating"
+                style={{ padding: 0, opacity: r.is_available ? 1 : 0.7 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  {r.image_url ? (
+                {/* Hero Image / Placeholder */}
+                {imgSrc ? (
+                  <div className="card-hero-image">
                     <img
-                      src={r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url}
+                      src={imgSrc}
                       alt={r.name}
-                      style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }}
+                      onLoad={e => (e.currentTarget.classList.add('loaded'))}
                     />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: '#f3e8ff', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <BookOpen size={20} />
+                    <div className="card-hero-overlay" />
+                    <div className="card-hero-badges">
+                      {isOwner && (
+                        <span className="card-hero-badge" style={{ background: 'rgba(168,85,247,0.85)', color: 'white' }}>
+                          My Item
+                        </span>
+                      )}
+                      <span className="card-hero-badge" style={{ background: cond.bg, color: cond.color }}>
+                        {r.condition}
+                      </span>
+                      <span className="card-hero-badge" style={{
+                        background: r.is_available ? 'rgba(16,185,129,0.85)' : 'rgba(100,116,139,0.85)',
+                        color: 'white',
+                      }}>
+                        {r.is_available ? 'Available' : 'Unavailable'}
+                      </span>
                     </div>
+                  </div>
+                ) : (
+                  <div className="card-hero-placeholder student_item">
+                    <div className="card-hero-badges">
+                      {isOwner && (
+                        <span className="card-hero-badge" style={{ background: 'rgba(0,0,0,0.35)', color: 'white' }}>
+                          My Item
+                        </span>
+                      )}
+                      <span className="card-hero-badge" style={{ background: cond.bg, color: cond.color }}>
+                        {r.condition}
+                      </span>
+                      <span className="card-hero-badge" style={{
+                        background: r.is_available ? 'rgba(16,185,129,0.85)' : 'rgba(100,116,139,0.85)',
+                        color: 'white',
+                      }}>
+                        {r.is_available ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
+                    <BookOpen size={40} />
+                  </div>
+                )}
+
+                {/* Card Body */}
+                <div className="card-hero-body">
+                  <h3 className="card-hero-title">{r.name}</h3>
+                  {r.description && (
+                    <p className="card-hero-desc">{r.description}</p>
                   )}
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {isOwner && (
-                      <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>My Item</span>
+                  <div className="card-hero-meta">
+                    {r.pickup_location && (
+                      <span className="card-hero-meta-item"><MapPin size={12} /> {r.pickup_location}</span>
                     )}
-                    <span className="badge" style={{ background: cond.bg, color: cond.color, fontWeight: 500, fontSize: 10 }}>
-                      {r.condition}
-                    </span>
-                    <span className={`badge ${r.is_available ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: 10 }}>
-                      {r.is_available ? 'Available' : 'Unavailable'}
-                    </span>
+                    {r.hourly_token_cost > 0 ? (
+                      <span className="card-hero-meta-item" style={{ color: '#a855f7', fontWeight: 600 }}>
+                        {r.hourly_token_cost} tokens/hr
+                      </span>
+                    ) : (
+                      <span className="card-hero-meta-item" style={{ color: '#16a34a', fontWeight: 600 }}>
+                        Free
+                      </span>
+                    )}
                   </div>
                 </div>
-                <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-1)' }}>{r.name}</h3>
-                {r.description && (
-                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>{r.description}</p>
-                )}
-                <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
-                  {r.pickup_location && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {r.pickup_location}</span>}
-                  {r.hourly_token_cost > 0 && (
-                    <span style={{ color: '#a855f7', fontWeight: 600 }}>{r.hourly_token_cost} tokens/hr</span>
-                  )}
-                  {r.hourly_token_cost === 0 && (
-                    <span style={{ color: '#16a34a', fontWeight: 600 }}>Free</span>
-                  )}
-                </div>
 
-                {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                {/* Action Buttons */}
+                <div className="card-hero-actions">
                   {canBorrow && (
-                    <button className="btn btn-sm" style={{ background: '#a855f7', color: 'white', border: 'none' }} onClick={() => setBorrowTarget(r)}>
-                      <HandCoins size={14} /> Borrow
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: '#a855f7', color: 'white', border: 'none', fontSize: 'var(--font-size-xs)' }}
+                      onClick={() => setBorrowTarget(r)}
+                    >
+                      <HandCoins size={13} /> Borrow
                     </button>
                   )}
                   {manageable && (
                     <>
                       {isOwner && (
-                        <button className="btn btn-sm" style={{ background: '#f3e8ff', color: '#a855f7', border: 'none' }} onClick={() => navigate(`/st-resources/${r.id}/edit`)}>
-                          <Edit2 size={14} /> Edit
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: '#a855f7' }}
+                          onClick={() => navigate(`/st-resources/${r.id}/edit`)}
+                        >
+                          <Edit2 size={13} /> Edit
                         </button>
                       )}
-                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleToggle(e, r)}>
-                        {r.is_available ? <PowerOff size={14} /> : <Power size={14} />}
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: 'var(--color-warning)' }}
+                        onClick={(e) => handleToggle(e, r)}
+                      >
+                        {r.is_available ? <PowerOff size={13} /> : <Power size={13} />}
                       </button>
-                      <button className="btn btn-icon btn-sm" style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 5, borderRadius: 'var(--radius-md)' }} onClick={(e) => handleDelete(e, r.id)}>
-                        <Trash2 size={14} />
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: 'var(--color-danger)' }}
+                        onClick={(e) => handleDelete(e, r.id)}
+                      >
+                        <Trash2 size={13} />
                       </button>
                     </>
                   )}

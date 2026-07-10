@@ -120,6 +120,7 @@ services:
       - REDIS_URL=redis://redis:6379
     volumes:
       - ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}:/app/config/firebase-service-account.json:ro
+      - uploads:/app/uploads
     networks:
       - rso-internal
     restart: unless-stopped

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { ImageCropModal } from '../../components/ImageCropModal';
 import {
   ArrowLeft, Loader2, Monitor, Beaker, Presentation, Laptop, Wrench, Check, Building, ImagePlus, X
 } from 'lucide-react';
@@ -81,21 +82,27 @@ export function EditResourcePage() {
     }
   }, [claims]);
 
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1 * 1024 * 1024) {
-      toast('warning', 'Image must be 1MB or less');
+    if (file.size > 5 * 1024 * 1024) {
+      toast('warning', 'Image must be 5MB or less');
       return;
     }
     if (!file.type.startsWith('image/')) {
       toast('warning', 'Please select an image file');
       return;
     }
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    setCropFile(file);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const handleCropComplete = (base64: string, filename: string) => {
+    setCropFile(null);
+    setImagePreview(base64);
+    setImageFile(new File([], filename));
   };
 
   const removeImage = () => {
@@ -170,10 +177,11 @@ export function EditResourcePage() {
   const displayImage = getDisplayImageUrl();
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <button className="btn btn-ghost" onClick={() => navigate('/resources')} style={{ marginBottom: 'var(--space-4)' }}>
-        <ArrowLeft size={18} /> Back to Resources
-      </button>
+    <>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <button className="btn btn-ghost" onClick={() => navigate('/resources')} style={{ marginBottom: 'var(--space-4)' }}>
+          <ArrowLeft size={18} /> Back to Resources
+        </button>
 
       <div className="page-header" style={{ marginBottom: 'var(--space-6)' }}>
         <h2 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Edit Resource</h2>
@@ -333,6 +341,16 @@ export function EditResourcePage() {
           </button>
         </form>
       )}
-    </div>
+      </div>
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          aspectRatio={16 / 9}
+          maxOutputSize={800}
+          onCrop={handleCropComplete}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
+    </>
   );
 }

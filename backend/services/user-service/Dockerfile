@@ -33,6 +33,9 @@ RUN npm install --omit=dev --ignore-scripts
 COPY --from=builder /app/backend/services/shared/dist ./backend/services/shared/dist
 COPY --from=builder /app/backend/services/user-service/dist ./backend/services/user-service/dist
 
+# Pre-create uploads directory with correct ownership
+RUN mkdir -p /app/uploads/avatars && chown -R appuser:appgroup /app/uploads
+
 USER appuser
 EXPOSE 3002
 

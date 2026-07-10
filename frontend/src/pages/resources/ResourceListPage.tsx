@@ -22,14 +22,6 @@ const typeIcons: Record<string, any> = {
   lab: Beaker, lecture_hall: Presentation, equipment: Laptop, meeting_room: Monitor, other: Wrench, student_resource: BookOpen,
 };
 
-const typeColors: Record<string, { color: string; bg: string }> = {
-  lab: { color: 'var(--color-primary)', bg: 'var(--color-primary-light)' },
-  lecture_hall: { color: 'var(--color-success)', bg: 'var(--color-success-light)' },
-  equipment: { color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
-  meeting_room: { color: 'var(--color-info)', bg: 'var(--color-info-light)' },
-  student_resource: { color: '#a855f7', bg: '#f3e8ff' },
-  other: { color: 'var(--color-text-muted)', bg: 'var(--color-bg-glass)' },
-};
 
 const typeLabels: Record<string, string> = {
   all: 'All', lab: 'Lab', lecture_hall: 'Lecture Hall', equipment: 'Equipment',
@@ -148,78 +140,109 @@ export function ResourceListPage() {
         <div className="grid-cards stagger">
           {filtered.map(r => {
             const Icon = typeIcons[r.resource_type] || Monitor;
-            const colors = typeColors[r.resource_type] || typeColors.other;
             const manageable = canManage(r);
             const isOwner = r.created_by === user?.uid;
+            const imgSrc = r.image_url
+              ? (r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url)
+              : null;
+
             return (
               <div
                 key={r.id}
-                className="card card-interactive"
-                style={{ cursor: 'pointer', borderLeft: r.category === 'ST_RESOURCE' ? '3px solid #a855f7' : undefined }}
+                className="card card-floating"
+                style={{ padding: 0 }}
                 onClick={() => navigate(`/resources/${r.id}`)}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)' }}>
-                  {r.image_url ? (
+                {/* Hero Image / Placeholder */}
+                {imgSrc ? (
+                  <div className="card-hero-image">
                     <img
-                      src={r.image_url.startsWith('/uploads/') ? `${window.location.origin}${r.image_url}` : r.image_url}
+                      src={imgSrc}
                       alt={r.name}
-                      style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', objectFit: 'cover', flexShrink: 0 }}
+                      onLoad={e => (e.currentTarget.classList.add('loaded'))}
                     />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon size={20} />
+                    <div className="card-hero-overlay" />
+                    <div className="card-hero-badges">
+                      {r.category === 'ST_RESOURCE' && (
+                        <span className="card-hero-badge" style={{ background: 'rgba(168,85,247,0.85)', color: 'white' }}>
+                          {isOwner ? 'My ST' : 'ST Resource'}
+                        </span>
+                      )}
+                      <span className="card-hero-badge" style={{
+                        background: r.status === 'available' ? 'rgba(16,185,129,0.85)' : 'rgba(100,116,139,0.85)',
+                        color: 'white',
+                      }}>
+                        {r.status || 'available'}
+                      </span>
                     </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {r.category === 'ST_RESOURCE' && (
-                      <span className="badge" style={{ background: '#f3e8ff', color: '#a855f7', fontWeight: 600, fontSize: 10 }}>
-                        {isOwner ? 'My ST' : 'ST'}
+                  </div>
+                ) : (
+                  <div className={`card-hero-placeholder ${r.resource_type}`}>
+                    <div className="card-hero-badges">
+                      {r.category === 'ST_RESOURCE' && (
+                        <span className="card-hero-badge" style={{ background: 'rgba(0,0,0,0.35)', color: 'white' }}>
+                          {isOwner ? 'My ST' : 'ST Resource'}
+                        </span>
+                      )}
+                      <span className="card-hero-badge" style={{
+                        background: r.status === 'available' ? 'rgba(16,185,129,0.85)' : 'rgba(100,116,139,0.85)',
+                        color: 'white',
+                      }}>
+                        {r.status || 'available'}
+                      </span>
+                    </div>
+                    <Icon size={40} />
+                  </div>
+                )}
+
+                {/* Card Body */}
+                <div className="card-hero-body">
+                  <h3 className="card-hero-title">{r.name}</h3>
+                  <p className="card-hero-desc">
+                    {r.description || `${(typeLabels[r.resource_type] || r.resource_type)} resource`}
+                  </p>
+                  <div className="card-hero-meta">
+                    {r.location && (
+                      <span className="card-hero-meta-item"><MapPin size={12} /> {r.location}</span>
+                    )}
+                    {r.capacity > 0 && (
+                      <span className="card-hero-meta-item"><Users size={12} /> {r.capacity} seats</span>
+                    )}
+                    {r.hourly_cost != null && r.hourly_cost > 0 && r.category === 'ST_RESOURCE' && (
+                      <span className="card-hero-meta-item" style={{ color: '#a855f7', fontWeight: 600 }}>
+                        {r.hourly_cost} tokens/hr
                       </span>
                     )}
-                    <span className={`badge ${r.status === 'available' ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: 10 }}>
-                      {r.status || 'available'}
-                    </span>
                   </div>
                 </div>
+
+                {/* Admin Actions */}
                 {manageable && (
-                  <div style={{ display: 'flex', gap: '4px', marginBottom: 'var(--space-3)' }}>
-                    <button 
-                      className="btn btn-icon btn-sm" 
-                      style={{ color: 'var(--color-warning)', background: 'var(--color-warning-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                  <div className="card-hero-actions">
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: 'var(--color-warning)' }}
                       onClick={(e) => handleToggleStatus(e, r)}
-                      title={r.status === 'available' ? "Temporarily Disable" : "Enable Resource"}
+                      title={r.status === 'available' ? 'Disable' : 'Enable'}
                     >
-                      {r.status === 'available' ? <PowerOff size={14} /> : <Power size={14} />}
+                      {r.status === 'available' ? <PowerOff size={13} /> : <Power size={13} />}
                     </button>
-                    <button 
-                      className="btn btn-icon btn-sm" 
-                      style={{ color: 'var(--color-info)', background: 'var(--color-info-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: 'var(--color-info)' }}
                       onClick={(e) => { e.stopPropagation(); navigate(`/resources/${r.id}/edit`); }}
                     >
-                      <Edit size={14} />
+                      <Edit size={13} /> Edit
                     </button>
-                    <button 
-                      className="btn btn-icon btn-sm" 
-                      style={{ color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: 5, borderRadius: 'var(--radius-md)' }}
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: 'var(--font-size-xs)', padding: '4px 10px', color: 'var(--color-danger)' }}
                       onClick={(e) => handleDelete(e, r.id)}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 )}
-                <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>{r.name}</h3>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)' }}>
-                  {r.description || `${(typeLabels[r.resource_type] || r.resource_type)} resource`}
-                </p>
-                <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                  {r.location && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {r.location}</span>}
-                  {r.capacity && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12} /> {r.capacity} seats</span>}
-                  {r.hourly_cost && r.category === 'ST_RESOURCE' && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#a855f7', fontWeight: 600 }}>
-                      {r.hourly_cost} tokens/hr
-                    </span>
-                  )}
-                </div>
               </div>
             );
           })}

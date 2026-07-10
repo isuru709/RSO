@@ -2,6 +2,7 @@ import { useState, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
+import { ImageCropModal } from '../../components/ImageCropModal';
 import { ArrowLeft, Loader2, BookOpen, MapPin, FileText, DollarSign, Share2, ImagePlus, X } from 'lucide-react';
 
 const stSuggestions = [
@@ -30,21 +31,27 @@ export function NewSTResourcePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1 * 1024 * 1024) {
-      toast('warning', 'Image must be 1MB or less');
+    if (file.size > 5 * 1024 * 1024) {
+      toast('warning', 'Image must be 5MB or less');
       return;
     }
     if (!file.type.startsWith('image/')) {
       toast('warning', 'Please select an image file');
       return;
     }
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    setCropFile(file);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const handleCropComplete = (base64: string, filename: string) => {
+    setCropFile(null);
+    setImagePreview(base64);
+    setImageFile(new File([], filename));
   };
 
   const removeImage = () => {
@@ -91,10 +98,12 @@ export function NewSTResourcePage() {
   };
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <button className="btn btn-ghost" onClick={() => navigate('/st-resources')} style={{ marginBottom: 'var(--space-4)' }}>
-        <ArrowLeft size={18} /> Back to ST Resources
-      </button>
+    <>
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <button className="btn btn-ghost" onClick={() => navigate('/st-resources')} style={{ marginBottom: 'var(--space-4)' }}>
+          <ArrowLeft size={18} /> Back to ST Resources
+        </button>
+        {/* ... rest of form is unchanged, just wrapped in Fragment */}
 
       <div className="card form-card" style={{ borderTop: '4px solid #a855f7' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
@@ -261,6 +270,16 @@ export function NewSTResourcePage() {
           </button>
         </form>
       </div>
-    </div>
+      </div>
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          aspectRatio={16 / 9}
+          maxOutputSize={800}
+          onCrop={handleCropComplete}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
+    </>
   );
 }
