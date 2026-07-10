@@ -291,13 +291,29 @@ export function ImageCropModal({
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onCancel} />
-      <div className="modal" style={{ width: 'min(95vw, 560px)', padding: 0, overflow: 'hidden' }}>
+      <div style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+        zIndex: 9998, backdropFilter: 'blur(4px)',
+      }} onClick={onCancel} />
+      <div style={{
+        position: 'fixed',
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'min(95vw, 560px)',
+        maxHeight: '90vh',
+        display: 'flex', flexDirection: 'column',
+        background: 'var(--color-bg-card, #1e1e2e)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        overflow: 'hidden',
+        zIndex: 9999,
+      }}>
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: 'var(--space-4) var(--space-5)',
           borderBottom: '1px solid var(--color-border)',
+          flexShrink: 0,
         }}>
           <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700 }}>
             Adjust & Crop Image
@@ -313,17 +329,19 @@ export function ImageCropModal({
           </button>
         </div>
 
-        {/* Canvas area */}
+        {/* Canvas area — fills remaining space */}
         <div
           ref={containerRef}
           style={{
             position: 'relative',
             width: '100%',
-            height: 'min(60vh, 400px)',
+            flex: '1 1 0',
+            minHeight: 200,
             background: '#111',
             cursor: dragging ? 'grabbing' : 'grab',
             touchAction: 'none',
             userSelect: 'none',
+            overflow: 'hidden',
           }}
         >
           <canvas
@@ -346,11 +364,12 @@ export function ImageCropModal({
           )}
         </div>
 
-        {/* Controls */}
+        {/* Controls — always visible at bottom */}
         <div style={{
-          padding: 'var(--space-4) var(--space-5)',
+          padding: 'var(--space-3) var(--space-5)',
           borderTop: '1px solid var(--color-border)',
           display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+          flexShrink: 0,
         }}>
           {/* Zoom slider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
