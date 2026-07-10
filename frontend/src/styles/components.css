@@ -154,6 +154,35 @@ select.input {
   padding-right: 36px;
 }
 
+/* Fix native dropdown option colors in dark mode */
+select.input option {
+  background: #1a1f4e;
+  color: #f0f2ff;
+}
+
+select.input option:checked {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+select.input option:disabled {
+  color: #6b72a0;
+}
+
+[data-theme="light"] select.input option {
+  background: #ffffff;
+  color: #111827;
+}
+
+[data-theme="light"] select.input option:checked {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+[data-theme="light"] select.input option:disabled {
+  color: #9ca3af;
+}
+
 textarea.input { resize: vertical; min-height: 100px; }
 
 .input-error { border-color: var(--color-danger) !important; }
