@@ -207,6 +207,8 @@ spec:
             - name: firebase-sa
               mountPath: /app/config
               readOnly: true
+            - name: uploads
+              mountPath: /app/uploads
           resources:
             requests:
               cpu: 50m
@@ -230,6 +232,9 @@ spec:
         - name: firebase-sa
           secret:
             secretName: firebase-service-account
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads-pvc
 ---
 apiVersion: v1
 kind: Service
